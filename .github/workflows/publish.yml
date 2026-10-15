@@ -1,0 +1,45 @@
+# Publishes the npm bridge and the MCP registry entry when a v* tag is pushed.
+# Needs an NPM_TOKEN repository secret. The registry login uses GitHub OIDC,
+# so no other secret is required.
+name: Publish
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "lts/*"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Check versions match the tag
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          test "$(jq -r .version package.json)" = "$TAG"
+          test "$(jq -r .version server.json)" = "$TAG"
+          test "$(jq -r '.packages[0].version' server.json)" = "$TAG"
+
+      - name: Smoke-test the bridge
+        run: |
+          printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' \
+            | node bin/pokerdata-mcp.js | jq -e '.result.tools | length > 0'
+
+      - name: Publish to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish to the MCP registry
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish

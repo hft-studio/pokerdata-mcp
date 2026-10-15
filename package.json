@@ -1,0 +1,37 @@
+{
+  "name": "pokerdata-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for GTO poker solver data: preflop ranges and postflop strategy for no-limit hold'em and pot-limit Omaha, from pokerdata.io.",
+  "mcpName": "io.github.hft-studio/pokerdata",
+  "bin": {
+    "pokerdata-mcp": "bin/pokerdata-mcp.js"
+  },
+  "files": [
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "poker",
+    "gto",
+    "solver",
+    "poker-ranges",
+    "preflop",
+    "postflop",
+    "nlhe",
+    "plo",
+    "poker-api"
+  ],
+  "homepage": "https://pokerdata.io/api",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hft-studio/pokerdata-mcp.git"
+  },
+  "license": "MIT",
+  "author": "HFT Studio LLC"
+}
