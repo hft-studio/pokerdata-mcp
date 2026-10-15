@@ -28,6 +28,7 @@ def call_tool(name, arguments):
 
 if __name__ == "__main__":
     rng = call_tool("get_range", {"game": "nl", "stack": 100, "spot": "UTG_60%"})
-    opened = {hand: f for hand, f in rng["weights"].items() if f >= 0.5}
+    # Compact rows are [hand, frequency, evSb]; pass detail="full" for maps.
+    opened = [hand for hand, freq, _ev in rng["range"] if freq >= 0.5]
     print(f"UTG opens {rng['combos']} combos at 100bb; {len(opened)} hand classes at 50%+")
     print(call_tool("get_range", {"game": "nl", "stack": 100, "spot": "UTG_60%", "hand": "AJo"}))
