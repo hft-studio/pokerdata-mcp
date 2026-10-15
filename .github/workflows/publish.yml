@@ -34,7 +34,12 @@ jobs:
         run: |
           curl -sL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
           ./mcp-publisher login github-oidc
-          ./mcp-publisher publish
+          # A version that is already listed is fine: npm may be what this run is for.
+          if ! ./mcp-publisher publish > publish.log 2>&1; then
+            cat publish.log
+            grep -q "duplicate version" publish.log
+          fi
+          cat publish.log
 
   npm:
     runs-on: ubuntu-latest
