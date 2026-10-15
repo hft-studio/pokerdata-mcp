@@ -1,11 +1,12 @@
-# Publishes the npm bridge and the MCP registry entry when a v* tag is pushed.
+# Publishes the npm bridge and the MCP registry entry when a v* release is
+# published on GitHub (Releases -> Draft a new release).
 # Needs an NPM_TOKEN repository secret. The registry login uses GitHub OIDC,
 # so no other secret is required.
 name: Publish
 
 on:
-  push:
-    tags: ["v*"]
+  release:
+    types: [published]
 
 jobs:
   publish:
