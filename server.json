@@ -22,24 +22,5 @@
         }
       ]
     }
-  ],
-  "packages": [
-    {
-      "registryType": "npm",
-      "registryBaseUrl": "https://registry.npmjs.org",
-      "identifier": "pokerdata-mcp",
-      "version": "1.0.0",
-      "transport": {
-        "type": "stdio"
-      },
-      "environmentVariables": [
-        {
-          "name": "POKERDATA_API_KEY",
-          "description": "pdk_… API key from https://pokerdata.io/app/api. Optional: without it the tool list and 6-max NL cash preflop tools still work.",
-          "isRequired": false,
-          "isSecret": true
-        }
-      ]
-    }
   ]
 }

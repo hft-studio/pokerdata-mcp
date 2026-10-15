@@ -66,7 +66,7 @@ claude mcp add --transport http pokerdata https://pokerdata.io/api/mcp \
   "mcpServers": {
     "pokerdata": {
       "command": "npx",
-      "args": ["-y", "pokerdata-mcp"],
+      "args": ["-y", "github:hft-studio/pokerdata-mcp"],
       "env": { "POKERDATA_API_KEY": "pdk_YOUR_KEY" }
     }
   }

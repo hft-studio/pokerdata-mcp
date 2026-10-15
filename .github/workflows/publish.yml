@@ -1,15 +1,17 @@
-# Publishes the npm bridge and the MCP registry entry when a v* release is
-# published on GitHub (Releases -> Draft a new release).
-# Needs an NPM_TOKEN repository secret. The registry login uses GitHub OIDC,
-# so no other secret is required.
+# Publishes on a pushed v* tag (or a GitHub release, which creates one).
+#
+# registry: lists the hosted server (https://pokerdata.io/api/mcp) in the
+#   official MCP registry. Logs in with GitHub OIDC, so it needs no secret.
+# npm: publishes the stdio bridge as `pokerdata-mcp`. Runs only when the
+#   NPM_TOKEN repository secret is set; skipped otherwise.
 name: Publish
 
 on:
-  release:
-    types: [published]
+  push:
+    tags: ["v*"]
 
 jobs:
-  publish:
+  registry:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -17,30 +19,36 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v5
-        with:
-          node-version: "lts/*"
-          registry-url: "https://registry.npmjs.org"
+      - name: Check server.json matches the tag
+        run: test "$(jq -r .version server.json)" = "${GITHUB_REF#refs/tags/v}"
 
-      - name: Check versions match the tag
-        run: |
-          TAG="${GITHUB_REF#refs/tags/v}"
-          test "$(jq -r .version package.json)" = "$TAG"
-          test "$(jq -r .version server.json)" = "$TAG"
-          test "$(jq -r '.packages[0].version' server.json)" = "$TAG"
-
-      - name: Smoke-test the bridge
+      - name: Smoke-test the hosted server
         run: |
           printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' \
             | node bin/pokerdata-mcp.js | jq -e '.result.tools | length > 0'
 
-      - name: Publish to npm
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
       - name: Publish to the MCP registry
         run: |
-          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+          curl -sL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
           ./mcp-publisher login github-oidc
           ./mcp-publisher publish
+
+  npm:
+    runs-on: ubuntu-latest
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+        if: env.NODE_AUTH_TOKEN != ''
+
+      - uses: actions/setup-node@v5
+        if: env.NODE_AUTH_TOKEN != ''
+        with:
+          node-version: "lts/*"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Publish to npm
+        if: env.NODE_AUTH_TOKEN != ''
+        run: |
+          test "$(jq -r .version package.json)" = "${GITHUB_REF#refs/tags/v}"
+          npm publish --access public
