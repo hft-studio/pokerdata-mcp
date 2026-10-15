@@ -1,4 +1,5 @@
-# Publishes on a pushed v* tag (or a GitHub release, which creates one).
+# Publishes on a pushed v* tag (or a GitHub release, which creates one), or
+# by hand from the Actions tab. A tag must match the version in the files.
 #
 # registry: lists the hosted server (https://pokerdata.io/api/mcp) in the
 #   official MCP registry. Logs in with GitHub OIDC, so it needs no secret.
@@ -9,6 +10,7 @@ name: Publish
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
 
 jobs:
   registry:
@@ -20,6 +22,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Check server.json matches the tag
+        if: startsWith(github.ref, 'refs/tags/')
         run: test "$(jq -r .version server.json)" = "${GITHUB_REF#refs/tags/v}"
 
       - name: Smoke-test the hosted server
@@ -50,5 +53,7 @@ jobs:
       - name: Publish to npm
         if: env.NODE_AUTH_TOKEN != ''
         run: |
-          test "$(jq -r .version package.json)" = "${GITHUB_REF#refs/tags/v}"
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            test "$(jq -r .version package.json)" = "${GITHUB_REF#refs/tags/v}"
+          fi
           npm publish --access public
