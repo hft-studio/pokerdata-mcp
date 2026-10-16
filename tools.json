@@ -17,6 +17,118 @@
           }
         },
         "additionalProperties": false
+      },
+      "title": "List covered games",
+      "annotations": {
+        "title": "List covered games",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "Coverage for every preflop game, plus what this server does not solve.",
+        "properties": {
+          "_coverage": {
+            "type": "object",
+            "description": "Formats and objectives this server does and does not answer.",
+            "properties": {
+              "format": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "description": "A supported format."
+                },
+                "description": "Supported formats: cash and mtt_chip_ev."
+              },
+              "supportedObjectives": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "description": "A supported objective."
+                },
+                "description": "Objectives that return data."
+              },
+              "supportedTournament": {
+                "type": "object",
+                "description": "The one certified tournament tree.",
+                "properties": {
+                  "game": {
+                    "type": "string",
+                    "description": "Game id, \"nlmtt8\"."
+                  },
+                  "format": {
+                    "type": "string",
+                    "description": "Always \"mtt\"."
+                  },
+                  "objective": {
+                    "type": "string",
+                    "description": "Always \"chip_ev\"."
+                  },
+                  "tableSize": {
+                    "type": "integer",
+                    "description": "Seats, 8."
+                  },
+                  "anteBb": {
+                    "type": "number",
+                    "description": "BB ante in big blinds, 1."
+                  }
+                }
+              },
+              "unsupported": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "description": "A request type with no published data."
+                },
+                "description": "ICM, PKO, satellites, 9-max MTT, tournament and multiway postflop."
+              }
+            }
+          }
+        },
+        "additionalProperties": {
+          "type": "object",
+          "description": "One game id to its covered stacks and positions. Full detail adds the bundle manifest fields.",
+          "properties": {
+            "game": {
+              "type": "string",
+              "description": "Game id."
+            },
+            "version": {
+              "type": "number",
+              "description": "Dataset version."
+            },
+            "generatedAt": {
+              "type": "string",
+              "description": "When the dataset was generated."
+            },
+            "bundleCount": {
+              "type": "integer",
+              "description": "Bundles in the dataset."
+            },
+            "stacks": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "description": "Stack depth in big blinds."
+              },
+              "description": "Covered stack depths."
+            },
+            "positions": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "Seat label."
+              },
+              "description": "Covered positions."
+            },
+            "error": {
+              "type": "number",
+              "description": "Upstream status code when a game did not answer."
+            }
+          }
+        }
       }
     },
     {
@@ -74,6 +186,168 @@
           "spot"
         ],
         "additionalProperties": false
+      },
+      "title": "Get preflop range",
+      "annotations": {
+        "title": "Get preflop range",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "One action's range: hand-class frequencies, and EV where the bundle scored it.",
+        "properties": {
+          "game": {
+            "type": "string",
+            "description": "Preflop game id, e.g. \"nl\" or \"nlmtt8\"."
+          },
+          "version": {
+            "type": "number",
+            "description": "Dataset version where the bundle publishes one."
+          },
+          "stack": {
+            "type": "number",
+            "description": "Stack depth in big blinds."
+          },
+          "spot": {
+            "type": "string",
+            "description": "Action path ending in an action, echoed from the request."
+          },
+          "history": {
+            "type": "string",
+            "description": "Action path ending in the acting position."
+          },
+          "actor": {
+            "type": "string",
+            "description": "Position to act at this node."
+          },
+          "action": {
+            "type": "string",
+            "description": "plo5: the action the range belongs to."
+          },
+          "kind": {
+            "type": "string",
+            "description": "plo5: the action family."
+          },
+          "hand": {
+            "type": "string",
+            "description": "The requested hand, when one was asked for."
+          },
+          "frequency": {
+            "type": "number",
+            "description": "Frequency of the requested hand, 0 to 1."
+          },
+          "freq": {
+            "type": "number",
+            "description": "Full detail: frequency of the requested hand."
+          },
+          "evSb": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "EV of the requested hand in small blinds."
+          },
+          "ev": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Full detail: EV of the requested hand in small blinds."
+          },
+          "hands": {
+            "type": "number",
+            "description": "Hand classes in the range."
+          },
+          "combos": {
+            "type": "number",
+            "description": "Combos in the range."
+          },
+          "summary": {
+            "type": "object",
+            "description": "What the compact range left out, so nothing looks complete when it is sampled.",
+            "properties": {
+              "nonzeroHands": {
+                "type": "integer",
+                "description": "Hand classes with a frequency above 0."
+              },
+              "pureHands": {
+                "type": "integer",
+                "description": "Classes at frequency 0.995 or higher."
+              },
+              "mixedHands": {
+                "type": "integer",
+                "description": "Classes strictly between 0.005 and 0.995."
+              },
+              "matchingHands": {
+                "type": "integer",
+                "description": "plo5: classes that take the action before the cut."
+              },
+              "minFreq": {
+                "type": "number",
+                "description": "plo5: the frequency floor applied."
+              },
+              "pureInReturned": {
+                "type": "integer",
+                "description": "plo5: pure classes among the returned rows."
+              },
+              "mixedInReturned": {
+                "type": "integer",
+                "description": "plo5: mixed classes among the returned rows."
+              },
+              "returned": {
+                "type": "integer",
+                "description": "Rows in this response."
+              },
+              "omitted": {
+                "type": "integer",
+                "description": "Rows dropped by the compact cut."
+              },
+              "classes": {
+                "type": "integer",
+                "description": "Postflop: hand classes with reach at the node."
+              }
+            }
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Column name."
+            },
+            "description": "Column order for `range`: hand, frequency, evSb."
+          },
+          "range": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "description": "One row: hand, frequency, EV in small blinds or null."
+            },
+            "description": "Compact rows in `columns` order."
+          },
+          "weights": {
+            "type": "object",
+            "description": "Hand class to frequency. An omitted class has weight 0.",
+            "additionalProperties": {
+              "type": "number",
+              "description": "Action frequency from 0 to 1."
+            }
+          },
+          "evs": {
+            "type": "object",
+            "description": "Hand class to EV, only where the solved bundle scored the hand.",
+            "additionalProperties": {
+              "type": "number",
+              "description": "EV in small blinds relative to folding."
+            }
+          },
+          "hint": {
+            "type": "string",
+            "description": "How to narrow, page, or widen the same query."
+          }
+        }
       }
     },
     {
@@ -131,6 +405,136 @@
           "history"
         ],
         "additionalProperties": false
+      },
+      "title": "Get preflop decision node",
+      "annotations": {
+        "title": "Get preflop decision node",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "Every action at one preflop decision node.",
+        "properties": {
+          "game": {
+            "type": "string",
+            "description": "Preflop game id, e.g. \"nl\" or \"nlmtt8\"."
+          },
+          "version": {
+            "type": "number",
+            "description": "Dataset version where the bundle publishes one."
+          },
+          "stack": {
+            "type": "number",
+            "description": "Stack depth in big blinds."
+          },
+          "spot": {
+            "type": "string",
+            "description": "Action path ending in an action, echoed from the request."
+          },
+          "history": {
+            "type": "string",
+            "description": "Action path ending in the acting position."
+          },
+          "actor": {
+            "type": "string",
+            "description": "Position to act at this node."
+          },
+          "schemaVersion": {
+            "type": "number",
+            "description": "Payload version, 1."
+          },
+          "units": {
+            "type": "object",
+            "description": "Unit labels: stack and sizeBb in bb, evs in sb."
+          },
+          "evUnit": {
+            "type": "string",
+            "description": "EV unit, \"sb\"."
+          },
+          "evBaseline": {
+            "type": "string",
+            "description": "What EV is measured against, \"fold\"."
+          },
+          "hand": {
+            "type": "string",
+            "description": "The requested hand, when one was asked for."
+          },
+          "continuingCombos": {
+            "type": "number",
+            "description": "Combos that continue past this node."
+          },
+          "continuingHands": {
+            "type": "number",
+            "description": "Hand classes that continue past this node."
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One action available at a preflop node.",
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "description": "Action token, e.g. \"Fold\", \"Open\", \"3B\"."
+                },
+                "kind": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Action family, e.g. \"fold\", \"call\", \"raise\"."
+                },
+                "sizeBb": {
+                  "type": "number",
+                  "description": "Raise-to size in big blinds, for raising actions."
+                },
+                "sizePctPot": {
+                  "type": "number",
+                  "description": "Raise size as a percent of the pot after calling."
+                },
+                "combos": {
+                  "type": "number",
+                  "description": "Combos that take this action."
+                },
+                "frequency": {
+                  "type": "number",
+                  "description": "Frequency for the requested hand, or the action total."
+                },
+                "evSb": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "EV in small blinds for the requested hand, if scored."
+                },
+                "weights": {
+                  "type": "object",
+                  "description": "Hand class to frequency. An omitted class has weight 0.",
+                  "additionalProperties": {
+                    "type": "number",
+                    "description": "Action frequency from 0 to 1."
+                  }
+                },
+                "evs": {
+                  "type": "object",
+                  "description": "Hand class to EV, only where the solved bundle scored the hand.",
+                  "additionalProperties": {
+                    "type": "number",
+                    "description": "EV in small blinds relative to folding."
+                  }
+                }
+              }
+            },
+            "description": "Actions at the node."
+          },
+          "hint": {
+            "type": "string",
+            "description": "How to narrow, page, or widen the same query."
+          }
+        }
       }
     },
     {
@@ -163,6 +567,96 @@
           "stack"
         ],
         "additionalProperties": false
+      },
+      "title": "Get table configuration",
+      "annotations": {
+        "title": "Get table configuration",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "Table setup for one preflop game and stack, in big blinds. Convergence is not published.",
+        "properties": {
+          "schemaVersion": {
+            "type": "number",
+            "description": "Payload version, 1."
+          },
+          "units": {
+            "type": "object",
+            "description": "Unit labels for stack, stacks, blinds, ante, openSizes, and evs."
+          },
+          "game": {
+            "type": "string",
+            "description": "Game id."
+          },
+          "stack": {
+            "type": "number",
+            "description": "Stack depth in big blinds."
+          },
+          "seats": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Seat label."
+            },
+            "description": "Seats in action order."
+          },
+          "stacks": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "number",
+              "description": "Starting stack in big blinds."
+            },
+            "description": "Starting stacks per seat. Null where the depth is solved against a different stack (10bb all-in/fold versus 50bb)."
+          },
+          "blinds": {
+            "type": "object",
+            "description": "Blinds in big blinds.",
+            "properties": {
+              "sb": {
+                "type": "number",
+                "description": "Small blind, 0.5."
+              },
+              "bb": {
+                "type": "number",
+                "description": "Big blind, 1."
+              }
+            }
+          },
+          "ante": {
+            "type": "number",
+            "description": "Ante in big blinds."
+          },
+          "antePostedBy": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Seat that posts the ante."
+          },
+          "stackIncludesAnte": {
+            "type": "boolean",
+            "description": "True when the named depth already contains the ante."
+          },
+          "openSizes": {
+            "type": "object",
+            "description": "First-in raise-to sizes, by seat, with label and sizeBb."
+          },
+          "evUnit": {
+            "type": "string",
+            "description": "EV unit, \"sb\"."
+          },
+          "evBaseline": {
+            "type": "string",
+            "description": "What EV is measured against, \"fold\"."
+          }
+        }
       }
     },
     {
@@ -219,6 +713,77 @@
           "stack"
         ],
         "additionalProperties": false
+      },
+      "title": "Search preflop spots",
+      "annotations": {
+        "title": "Search preflop spots",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "Valid decision nodes for one game and stack, paginated.",
+        "properties": {
+          "game": {
+            "type": "string",
+            "description": "Game id."
+          },
+          "stack": {
+            "type": "number",
+            "description": "Stack depth in big blinds."
+          },
+          "total": {
+            "type": "integer",
+            "description": "Spots in the dataset for this stack."
+          },
+          "matched": {
+            "type": "integer",
+            "description": "Spots left after the depth and contains filters."
+          },
+          "offset": {
+            "type": "integer",
+            "description": "Offset this page started at."
+          },
+          "returned": {
+            "type": "integer",
+            "description": "Spots in this page."
+          },
+          "nextOffset": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Offset for the next page, or null at the end."
+          },
+          "spots": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One decision node.",
+              "properties": {
+                "history": {
+                  "type": "string",
+                  "description": "Action path ending in the acting position."
+                },
+                "depth": {
+                  "type": "integer",
+                  "description": "Decision depth: 1 = RFI, 2 = vs open, 3 = 3-bet pots."
+                },
+                "actor": {
+                  "type": "string",
+                  "description": "Position to act."
+                }
+              }
+            },
+            "description": "This page of decision nodes."
+          },
+          "hint": {
+            "type": "string",
+            "description": "How to narrow, page, or widen the same query."
+          }
+        }
       }
     },
     {
@@ -249,6 +814,178 @@
           }
         },
         "additionalProperties": false
+      },
+      "title": "List postflop packs",
+      "annotations": {
+        "title": "List postflop packs",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "Solved postflop packs and their boards.",
+        "properties": {
+          "packs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One solved pack.",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Pack id to pass as `pack`."
+                },
+                "title": {
+                  "type": "string",
+                  "description": "Human title."
+                },
+                "preflopLine": {
+                  "type": "string",
+                  "description": "Preflop line the pack starts from."
+                },
+                "stackBb": {
+                  "type": "number",
+                  "description": "Starting stack in big blinds."
+                },
+                "oopPos": {
+                  "type": "string",
+                  "description": "Out-of-position seat."
+                },
+                "ipPos": {
+                  "type": "string",
+                  "description": "In-position seat."
+                },
+                "potBb": {
+                  "type": "number",
+                  "description": "Starting pot in big blinds."
+                },
+                "effStackBb": {
+                  "type": "number",
+                  "description": "Effective stack behind, in big blinds."
+                },
+                "hasEv": {
+                  "type": "boolean",
+                  "description": "Whether combos carry EV."
+                },
+                "actionEvCoverage": {
+                  "type": "object",
+                  "description": "How action EV is reconstructed, and for how many boards."
+                },
+                "generatedAt": {
+                  "type": "string",
+                  "description": "When the pack was generated."
+                },
+                "sizingTrees": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "description": "One bet-size tree of this pack.",
+                    "properties": {
+                      "tree": {
+                        "type": "string",
+                        "description": "\"75\" or \"33\"."
+                      },
+                      "packId": {
+                        "type": "string",
+                        "description": "Pack id that addresses this tree."
+                      },
+                      "betSizing": {
+                        "type": "string",
+                        "description": "What the tree bets on each street."
+                      },
+                      "boards": {
+                        "type": "integer",
+                        "description": "Boards solved under the tree."
+                      },
+                      "missing": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "description": "A board absent from this tree."
+                        },
+                        "description": "Boards the tree does not cover."
+                      }
+                    }
+                  },
+                  "description": "Bet-size trees; either packId is accepted by every postflop tool."
+                },
+                "exploitability": {
+                  "type": "string",
+                  "description": "\"published\" or \"not available\" for this tree. Never estimated."
+                },
+                "boardCount": {
+                  "type": "integer",
+                  "description": "Solved boards in the pack."
+                },
+                "queryableBoards": {
+                  "type": "integer",
+                  "description": "Boards whose nodes can be walked."
+                },
+                "boards": {
+                  "type": "array",
+                  "description": "Board names in the pack list, or per-board detail when one `pack` was requested.",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "description": "Board in spaced form, e.g. \"3h 3d 2s\"."
+                      },
+                      {
+                        "type": "object",
+                        "description": "One solved board.",
+                        "properties": {
+                          "board": {
+                            "type": "string",
+                            "description": "Board in spaced form."
+                          },
+                          "trees": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "description": "\"75\" or \"33\"."
+                            },
+                            "description": "Trees this board is solved under."
+                          },
+                          "river": {
+                            "type": "boolean",
+                            "description": "Whether the river is solved."
+                          },
+                          "queryable": {
+                            "type": "boolean",
+                            "description": "Whether nodes can be walked."
+                          },
+                          "actionEv": {
+                            "type": "object",
+                            "description": "Whether per-action EV can be reconstructed here."
+                          },
+                          "exploitabilityPct": {
+                            "type": "number",
+                            "description": "Published exploitability as a percent of the pot. Omitted when the index has no number."
+                          },
+                          "exploitabilityTree": {
+                            "type": "string",
+                            "description": "Which tree the exploitability belongs to."
+                          },
+                          "iterations": {
+                            "type": "integer",
+                            "description": "Published solver iterations."
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "description": "Packs matching `variant` and `pack`."
+          },
+          "hint": {
+            "type": "string",
+            "description": "How to narrow, page, or widen the same query."
+          }
+        }
       }
     },
     {
@@ -294,6 +1031,226 @@
           "board"
         ],
         "additionalProperties": false
+      },
+      "title": "Get postflop solver node",
+      "annotations": {
+        "title": "Get postflop solver node",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "One postflop solver node: the acting player's strategy and the legal next segments.",
+        "properties": {
+          "board": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Board in spaced form."
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "description": "One card."
+                },
+                "description": "Cards visible at this node."
+              }
+            ],
+            "description": "Board at this node."
+          },
+          "path": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "description": "One segment from the root."
+            },
+            "description": "Segments walked from the root to this node."
+          },
+          "actingPlayer": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "0 for out of position, 1 for in position."
+          },
+          "potBb": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Pot at this node in big blinds."
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One action available at a postflop node.",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "description": "Action label, e.g. \"Check\", \"Bet\", \"Call\"."
+                },
+                "action": {
+                  "type": "string",
+                  "description": "Action segment including its size, e.g. \"Bet 5.5\"."
+                },
+                "comparisonKey": {
+                  "type": "string",
+                  "description": "Size-normalised action key used to line two nodes up, e.g. \"Bet 75% pot\"."
+                },
+                "actionType": {
+                  "type": "string",
+                  "description": "Action label without the size."
+                },
+                "addBb": {
+                  "type": "number",
+                  "description": "Chips this action adds, in big blinds."
+                },
+                "sizePotPct": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Bet size as a percent of the pot, bets only."
+                },
+                "frequency": {
+                  "type": "number",
+                  "description": "Reach-weighted frequency from 0 to 1."
+                },
+                "evBb": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Action EV in big blinds where the pack publishes it."
+                },
+                "evLossBb": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "EV given up against the best action, in big blinds."
+                }
+              }
+            },
+            "description": "Actions at the node with their reach-weighted frequency."
+          },
+          "childSegments": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "An action like \"Bet 5.5\" or a runout like \"deal:7c\"."
+            },
+            "description": "Append one of these to `path` to walk deeper."
+          },
+          "combo": {
+            "type": "string",
+            "description": "The requested combo, when one was asked for."
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Column name."
+            },
+            "description": "Column order for `hands`: combo, reach, frequencies, evBb, evLossBb, actionEvBb."
+          },
+          "hands": {
+            "type": "array",
+            "description": "Compact rows in `columns` order, or the full per-combo strategy objects in full detail.",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "description": "One compact row."
+                },
+                {
+                  "type": "object",
+                  "description": "One combo's stored strategy."
+                }
+              ]
+            }
+          },
+          "summary": {
+            "type": "object",
+            "description": "What the compact range left out, so nothing looks complete when it is sampled.",
+            "properties": {
+              "nonzeroHands": {
+                "type": "integer",
+                "description": "Hand classes with a frequency above 0."
+              },
+              "pureHands": {
+                "type": "integer",
+                "description": "Classes at frequency 0.995 or higher."
+              },
+              "mixedHands": {
+                "type": "integer",
+                "description": "Classes strictly between 0.005 and 0.995."
+              },
+              "matchingHands": {
+                "type": "integer",
+                "description": "plo5: classes that take the action before the cut."
+              },
+              "minFreq": {
+                "type": "number",
+                "description": "plo5: the frequency floor applied."
+              },
+              "pureInReturned": {
+                "type": "integer",
+                "description": "plo5: pure classes among the returned rows."
+              },
+              "mixedInReturned": {
+                "type": "integer",
+                "description": "plo5: mixed classes among the returned rows."
+              },
+              "returned": {
+                "type": "integer",
+                "description": "Rows in this response."
+              },
+              "omitted": {
+                "type": "integer",
+                "description": "Rows dropped by the compact cut."
+              },
+              "classes": {
+                "type": "integer",
+                "description": "Postflop: hand classes with reach at the node."
+              }
+            }
+          },
+          "node": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Full detail: the stored node. Null at a chance point, where runouts hang directly under the path."
+          },
+          "reach": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "description": "A combo and its reach weight."
+            },
+            "description": "Full detail: the acting player's per-combo reach."
+          },
+          "actionFreqs": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "description": "Reach-weighted frequency for the action at this index."
+            },
+            "description": "Full detail: aggregate frequency per action."
+          },
+          "hint": {
+            "type": "string",
+            "description": "How to narrow, page, or widen the same query."
+          }
+        }
       }
     },
     {
@@ -355,6 +1312,108 @@
           "combo"
         ],
         "additionalProperties": false
+      },
+      "title": "Explain a postflop combo",
+      "annotations": {
+        "title": "Explain a postflop combo",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "Coverage-first envelope: coverage and context describe the answer, result carries it.",
+        "properties": {
+          "schemaVersion": {
+            "type": "string",
+            "description": "Envelope version, currently \"1.0\"."
+          },
+          "coverage": {
+            "type": "object",
+            "description": "Whether the request was answered exactly, aggregated, or refused as out of coverage.",
+            "properties": {
+              "status": {
+                "type": "string",
+                "description": "\"exact\", \"aggregated_report\", or \"unsupported\". Treat \"unsupported\" as a hard stop."
+              },
+              "reason": {
+                "type": "string",
+                "description": "Why the request is out of coverage."
+              },
+              "requested": {
+                "type": "object",
+                "description": "The format, objective, ante, or pack that was asked for."
+              },
+              "available": {
+                "type": "string",
+                "description": "What is published instead."
+              },
+              "dataClass": {
+                "type": "string",
+                "description": "\"solver\", \"solver_aggregate\", or \"solver_comparison\"."
+              },
+              "objective": {
+                "type": "string",
+                "description": "\"solver_ev\", \"cash_game_ev\", or \"chip_ev\"."
+              },
+              "hasEv": {
+                "type": "boolean",
+                "description": "Whether the pack ships per-combo EV."
+              },
+              "source": {
+                "type": "object",
+                "description": "Pack, board, path, generation time, and solve quality."
+              },
+              "matchingBoards": {
+                "type": "integer",
+                "description": "Boards matching the texture filters."
+              },
+              "analyzedBoards": {
+                "type": "integer",
+                "description": "Boards actually read at the requested path."
+              },
+              "omittedByLimit": {
+                "type": "integer",
+                "description": "Matching boards dropped by boardLimit."
+              },
+              "unavailableAtPath": {
+                "type": "integer",
+                "description": "Selected boards with no node at the path."
+              },
+              "generatedAt": {
+                "type": "string",
+                "description": "When the pack was generated."
+              },
+              "solveQuality": {
+                "type": "object",
+                "description": "Published exploitability and iteration counts. Omitted, never estimated, when the pack does not publish them."
+              }
+            }
+          },
+          "context": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Canonical context the answer belongs to (variant, format, stacks, positions, board, path). Null when the request is unsupported."
+          },
+          "result": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Recommendation, made-hand and draw classification, blockers, the exact action mix with EV, and same-rank-class suit comparisons. Null when the request is unsupported."
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "One caveat about how the result may be used."
+            },
+            "description": "Caveats that must survive into any answer built on this result."
+          }
+        }
       }
     },
     {
@@ -376,6 +1435,7 @@
           },
           "filters": {
             "type": "object",
+            "description": "Texture filters applied to the pack's solved boards. All optional; omit for every board.",
             "properties": {
               "pairedness": {
                 "type": "string",
@@ -385,7 +1445,8 @@
                   "double_paired",
                   "trips",
                   "quads"
-                ]
+                ],
+                "description": "Rank repetition on the board."
               },
               "suitTexture": {
                 "type": "string",
@@ -396,7 +1457,8 @@
                   "three_flush",
                   "four_flush",
                   "five_flush"
-                ]
+                ],
+                "description": "Most cards of one suit on the board. A three-card monotone flop is monotone."
               },
               "highCard": {
                 "type": "string",
@@ -414,7 +1476,8 @@
                   "Q",
                   "K",
                   "A"
-                ]
+                ],
+                "description": "Exact highest board rank."
               },
               "highCardClass": {
                 "type": "string",
@@ -423,7 +1486,8 @@
                   "broadway_high",
                   "middle",
                   "low"
-                ]
+                ],
+                "description": "Highest board rank bucketed: ace, ten through king, seven through nine, or lower."
               },
               "connectivity": {
                 "type": "string",
@@ -431,7 +1495,8 @@
                   "connected",
                   "semi_connected",
                   "disconnected"
-                ]
+                ],
+                "description": "How many board cards sit inside one five-rank straight window."
               }
             },
             "additionalProperties": false
@@ -472,6 +1537,108 @@
           "pack"
         ],
         "additionalProperties": false
+      },
+      "title": "Report on board textures",
+      "annotations": {
+        "title": "Report on board textures",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "Coverage-first envelope: coverage and context describe the answer, result carries it.",
+        "properties": {
+          "schemaVersion": {
+            "type": "string",
+            "description": "Envelope version, currently \"1.0\"."
+          },
+          "coverage": {
+            "type": "object",
+            "description": "Whether the request was answered exactly, aggregated, or refused as out of coverage.",
+            "properties": {
+              "status": {
+                "type": "string",
+                "description": "\"exact\", \"aggregated_report\", or \"unsupported\". Treat \"unsupported\" as a hard stop."
+              },
+              "reason": {
+                "type": "string",
+                "description": "Why the request is out of coverage."
+              },
+              "requested": {
+                "type": "object",
+                "description": "The format, objective, ante, or pack that was asked for."
+              },
+              "available": {
+                "type": "string",
+                "description": "What is published instead."
+              },
+              "dataClass": {
+                "type": "string",
+                "description": "\"solver\", \"solver_aggregate\", or \"solver_comparison\"."
+              },
+              "objective": {
+                "type": "string",
+                "description": "\"solver_ev\", \"cash_game_ev\", or \"chip_ev\"."
+              },
+              "hasEv": {
+                "type": "boolean",
+                "description": "Whether the pack ships per-combo EV."
+              },
+              "source": {
+                "type": "object",
+                "description": "Pack, board, path, generation time, and solve quality."
+              },
+              "matchingBoards": {
+                "type": "integer",
+                "description": "Boards matching the texture filters."
+              },
+              "analyzedBoards": {
+                "type": "integer",
+                "description": "Boards actually read at the requested path."
+              },
+              "omittedByLimit": {
+                "type": "integer",
+                "description": "Matching boards dropped by boardLimit."
+              },
+              "unavailableAtPath": {
+                "type": "integer",
+                "description": "Selected boards with no node at the path."
+              },
+              "generatedAt": {
+                "type": "string",
+                "description": "When the pack was generated."
+              },
+              "solveQuality": {
+                "type": "object",
+                "description": "Published exploitability and iteration counts. Omitted, never estimated, when the pack does not publish them."
+              }
+            }
+          },
+          "context": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Canonical context the answer belongs to (variant, format, stacks, positions, board, path). Null when the request is unsupported."
+          },
+          "result": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Action frequencies and range composition aggregated across solved boards, with equal weight per board, plus representative boards. Null when the request is unsupported."
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "One caveat about how the result may be used."
+            },
+            "description": "Caveats that must survive into any answer built on this result."
+          }
+        }
       }
     },
     {
@@ -490,6 +1657,7 @@
           },
           "baseline": {
             "type": "object",
+            "description": "The context deltas are measured from. One side of the comparison. Preflop contexts use game, stack, history and optional hand; postflop contexts use pack, board, path and optional combo.",
             "properties": {
               "game": {
                 "type": "string",
@@ -502,23 +1670,28 @@
                   "plo5",
                   "plo9",
                   "plo6hu"
-                ]
+                ],
+                "description": "Preflop only. Both sides must name the same game."
               },
               "stack": {
-                "type": "number"
+                "type": "number",
+                "description": "Preflop only. Stack depth in big blinds."
               },
               "history": {
-                "type": "string"
+                "type": "string",
+                "description": "Preflop only. Action path ending in the position about to act, e.g. \"UTG_60%_HJ\"."
               },
               "hand": {
-                "type": "string"
+                "type": "string",
+                "description": "Preflop only. One hand or class, e.g. AKs. Provide it in both contexts or neither; PLO comparisons require it."
               },
               "pack": {
                 "type": "string",
                 "description": "Pack id from list_postflop_packs. Use a sizingTrees packId to pick the tree: the pack id for 75% pot on the flop, or \"<pack>-flop33\" for 33%."
               },
               "board": {
-                "type": "string"
+                "type": "string",
+                "description": "Postflop only. Board in spaced form, e.g. \"3h 3d 2s\"."
               },
               "path": {
                 "type": "array",
@@ -528,13 +1701,15 @@
                 "description": "Exact childSegment path from get_postflop_node, e.g. [\"Check\", \"Bet 5.5\"]. Empty for the root."
               },
               "combo": {
-                "type": "string"
+                "type": "string",
+                "description": "Postflop only. Exact two-card combo, e.g. As5s. Provide it in both contexts or neither."
               }
             },
             "additionalProperties": false
           },
           "comparison": {
             "type": "object",
+            "description": "The context deltas are measured to. One side of the comparison. Preflop contexts use game, stack, history and optional hand; postflop contexts use pack, board, path and optional combo.",
             "properties": {
               "game": {
                 "type": "string",
@@ -547,23 +1722,28 @@
                   "plo5",
                   "plo9",
                   "plo6hu"
-                ]
+                ],
+                "description": "Preflop only. Both sides must name the same game."
               },
               "stack": {
-                "type": "number"
+                "type": "number",
+                "description": "Preflop only. Stack depth in big blinds."
               },
               "history": {
-                "type": "string"
+                "type": "string",
+                "description": "Preflop only. Action path ending in the position about to act, e.g. \"UTG_60%_HJ\"."
               },
               "hand": {
-                "type": "string"
+                "type": "string",
+                "description": "Preflop only. One hand or class, e.g. AKs. Provide it in both contexts or neither; PLO comparisons require it."
               },
               "pack": {
                 "type": "string",
                 "description": "Pack id from list_postflop_packs. Use a sizingTrees packId to pick the tree: the pack id for 75% pot on the flop, or \"<pack>-flop33\" for 33%."
               },
               "board": {
-                "type": "string"
+                "type": "string",
+                "description": "Postflop only. Board in spaced form, e.g. \"3h 3d 2s\"."
               },
               "path": {
                 "type": "array",
@@ -573,7 +1753,8 @@
                 "description": "Exact childSegment path from get_postflop_node, e.g. [\"Check\", \"Bet 5.5\"]. Empty for the root."
               },
               "combo": {
-                "type": "string"
+                "type": "string",
+                "description": "Postflop only. Exact two-card combo, e.g. As5s. Provide it in both contexts or neither."
               }
             },
             "additionalProperties": false
@@ -612,6 +1793,108 @@
           "comparison"
         ],
         "additionalProperties": false
+      },
+      "title": "Compare two strategies",
+      "annotations": {
+        "title": "Compare two strategies",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "Coverage-first envelope: coverage and context describe the answer, result carries it.",
+        "properties": {
+          "schemaVersion": {
+            "type": "string",
+            "description": "Envelope version, currently \"1.0\"."
+          },
+          "coverage": {
+            "type": "object",
+            "description": "Whether the request was answered exactly, aggregated, or refused as out of coverage.",
+            "properties": {
+              "status": {
+                "type": "string",
+                "description": "\"exact\", \"aggregated_report\", or \"unsupported\". Treat \"unsupported\" as a hard stop."
+              },
+              "reason": {
+                "type": "string",
+                "description": "Why the request is out of coverage."
+              },
+              "requested": {
+                "type": "object",
+                "description": "The format, objective, ante, or pack that was asked for."
+              },
+              "available": {
+                "type": "string",
+                "description": "What is published instead."
+              },
+              "dataClass": {
+                "type": "string",
+                "description": "\"solver\", \"solver_aggregate\", or \"solver_comparison\"."
+              },
+              "objective": {
+                "type": "string",
+                "description": "\"solver_ev\", \"cash_game_ev\", or \"chip_ev\"."
+              },
+              "hasEv": {
+                "type": "boolean",
+                "description": "Whether the pack ships per-combo EV."
+              },
+              "source": {
+                "type": "object",
+                "description": "Pack, board, path, generation time, and solve quality."
+              },
+              "matchingBoards": {
+                "type": "integer",
+                "description": "Boards matching the texture filters."
+              },
+              "analyzedBoards": {
+                "type": "integer",
+                "description": "Boards actually read at the requested path."
+              },
+              "omittedByLimit": {
+                "type": "integer",
+                "description": "Matching boards dropped by boardLimit."
+              },
+              "unavailableAtPath": {
+                "type": "integer",
+                "description": "Selected boards with no node at the path."
+              },
+              "generatedAt": {
+                "type": "string",
+                "description": "When the pack was generated."
+              },
+              "solveQuality": {
+                "type": "object",
+                "description": "Published exploitability and iteration counts. Omitted, never estimated, when the pack does not publish them."
+              }
+            }
+          },
+          "context": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Canonical context the answer belongs to (variant, format, stacks, positions, board, path). Null when the request is unsupported."
+          },
+          "result": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Both snapshots, the per-action frequency and EV deltas, and the largest combo changes for postflop comparisons. Null when the request is unsupported."
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "One caveat about how the result may be used."
+            },
+            "description": "Caveats that must survive into any answer built on this result."
+          }
+        }
       }
     },
     {
@@ -621,6 +1904,86 @@
         "type": "object",
         "properties": {},
         "additionalProperties": false
+      },
+      "title": "List solved datasets",
+      "annotations": {
+        "title": "List solved datasets",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "Preflop datasets in the shipped tree documentation.",
+        "properties": {
+          "source": {
+            "type": "string",
+            "description": "Where the documentation came from, \"data/tree-docs\"."
+          },
+          "generated": {
+            "type": "string",
+            "description": "Date the documentation was generated."
+          },
+          "preflopExploitability": {
+            "type": "string",
+            "description": "Always \"not available\": no preflop dataset publishes it."
+          },
+          "datasets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One dataset.",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Dataset id to pass to get_tree_docs, e.g. \"nl/v2\"."
+                },
+                "rows": {
+                  "type": "integer",
+                  "description": "Index rows for the dataset."
+                },
+                "stacks": {
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "description": "Stack depth in big blinds."
+                  },
+                  "description": "Covered stack depths."
+                },
+                "positions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "Seat label."
+                  },
+                  "description": "Positions with index rows."
+                },
+                "analyzed": {
+                  "type": "integer",
+                  "description": "Rows whose bundle was analyzed."
+                },
+                "formats": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "Format label."
+                  },
+                  "description": "Formats in the index."
+                },
+                "perNode": {
+                  "type": "boolean",
+                  "description": "True when index rows are per node rather than per bundle."
+                }
+              }
+            },
+            "description": "Documented datasets."
+          },
+          "readme": {
+            "type": "string",
+            "description": "How to read one dataset's write-up."
+          }
+        }
       }
     },
     {
@@ -638,6 +2001,154 @@
           "dataset"
         ],
         "additionalProperties": false
+      },
+      "title": "Get tree documentation",
+      "annotations": {
+        "title": "Get tree documentation",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "Tree documentation and per-stack counts for one dataset.",
+        "properties": {
+          "dataset": {
+            "type": "string",
+            "description": "Dataset id, echoed."
+          },
+          "source": {
+            "type": "string",
+            "description": "File the coverage note came from."
+          },
+          "preflopExploitability": {
+            "type": "string",
+            "description": "Always \"not available\"."
+          },
+          "coverage": {
+            "type": "string",
+            "description": "Coverage row from the shipped README."
+          },
+          "stacks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One stack depth of the dataset.",
+              "properties": {
+                "stackBb": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Stack depth in big blinds."
+                },
+                "positions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "Seat label."
+                  },
+                  "description": "Positions at this depth."
+                },
+                "formats": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "Format label."
+                  },
+                  "description": "Formats at this depth."
+                },
+                "rows": {
+                  "type": "integer",
+                  "description": "Index rows at this depth."
+                },
+                "analyzed": {
+                  "type": "integer",
+                  "description": "Analyzed rows at this depth."
+                },
+                "edges": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Edges across the bundles."
+                },
+                "decisionNodes": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Decision nodes across the bundles."
+                },
+                "hasRaiseMeta": {
+                  "type": "boolean",
+                  "description": "Whether raise metadata is stored."
+                },
+                "bundles": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "description": "One bundle.",
+                    "properties": {
+                      "position": {
+                        "type": "string",
+                        "description": "Acting position the bundle covers."
+                      },
+                      "key": {
+                        "type": "string",
+                        "description": "Bundle key."
+                      },
+                      "edges": {
+                        "type": [
+                          "number",
+                          "null"
+                        ],
+                        "description": "Edges in the bundle."
+                      },
+                      "decisionNodes": {
+                        "type": [
+                          "number",
+                          "null"
+                        ],
+                        "description": "Decision nodes in the bundle."
+                      },
+                      "analyzed": {
+                        "type": "boolean",
+                        "description": "Whether the bundle was analyzed."
+                      },
+                      "gzBytes": {
+                        "type": [
+                          "number",
+                          "null"
+                        ],
+                        "description": "Compressed size in bytes."
+                      }
+                    }
+                  },
+                  "description": "Bundles at this depth, for per-bundle datasets."
+                },
+                "sampleKeys": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "A node key."
+                  },
+                  "description": "Sample keys, for per-node datasets."
+                },
+                "note": {
+                  "type": "string",
+                  "description": "How to read the rows at this depth."
+                }
+              }
+            },
+            "description": "Per-stack counts."
+          },
+          "error": {
+            "type": "string",
+            "description": "Present instead of a payload when the request named something that does not exist. No figure is estimated in its place."
+          }
+        }
       }
     },
     {
@@ -647,10 +2158,12 @@
         "type": "object",
         "properties": {
           "game": {
-            "type": "string"
+            "type": "string",
+            "description": "Preflop game id, e.g. \"nl\", \"nl9\", \"nlmtt8\", \"nlh8-hydra\", \"plo\", \"plo9\", \"plo5\", \"plo6hu\"."
           },
           "stack": {
-            "type": "number"
+            "type": "number",
+            "description": "Stack depth in big blinds, e.g. 100."
           },
           "path": {
             "type": "string",
@@ -663,6 +2176,138 @@
           "path"
         ],
         "additionalProperties": false
+      },
+      "title": "Get range index metadata",
+      "annotations": {
+        "title": "Get range index metadata",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "Index metadata for one preflop game, stack, and path. Never a strategy, and never an invented exploitability.",
+        "properties": {
+          "game": {
+            "type": "string",
+            "description": "Game id, echoed."
+          },
+          "dataset": {
+            "type": "string",
+            "description": "Dataset the game maps to."
+          },
+          "stack": {
+            "type": "number",
+            "description": "Stack depth in big blinds, echoed."
+          },
+          "path": {
+            "type": "string",
+            "description": "Action path, echoed."
+          },
+          "actor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Acting position read off the path."
+          },
+          "match": {
+            "type": "string",
+            "description": "\"bundle\", \"node\", or \"none\"."
+          },
+          "preflopExploitability": {
+            "type": "string",
+            "description": "Always \"not available\"."
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One index row.",
+              "properties": {
+                "position": {
+                  "type": "string",
+                  "description": "Acting position."
+                },
+                "format": {
+                  "type": "string",
+                  "description": "Format label."
+                },
+                "key": {
+                  "type": "string",
+                  "description": "Row key."
+                },
+                "analyzed": {
+                  "type": "boolean",
+                  "description": "Whether the row was analyzed."
+                },
+                "edges": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Edges."
+                },
+                "decisionNodes": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Decision nodes."
+                },
+                "maxActions": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Most actions on any node."
+                },
+                "manifestEdgeCount": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Edge count from the manifest."
+                },
+                "gzBytes": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Compressed size in bytes."
+                },
+                "freqSumChecks": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Frequency-sum checks run."
+                },
+                "freqSumOff": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Checks that came out off."
+                },
+                "hasRaiseMeta": {
+                  "type": "boolean",
+                  "description": "Whether raise metadata is stored."
+                }
+              }
+            },
+            "description": "Matching index rows."
+          },
+          "note": {
+            "type": "string",
+            "description": "What the match means, or that nothing was estimated."
+          },
+          "error": {
+            "type": "string",
+            "description": "Present instead of a payload when the request named something that does not exist. No figure is estimated in its place."
+          }
+        }
       }
     },
     {
@@ -672,13 +2317,72 @@
         "type": "object",
         "properties": {
           "game": {
-            "type": "string"
+            "type": "string",
+            "description": "Preflop game id to report on, e.g. \"nl\" or \"nlmtt8\". Any known game answers \"not available\"."
           }
         },
         "required": [
           "game"
         ],
         "additionalProperties": false
+      },
+      "title": "Get preflop exploitability",
+      "annotations": {
+        "title": "Get preflop exploitability",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "Preflop exploitability for one game. No preflop dataset publishes one, so the answer is always unavailable and never a number.",
+        "properties": {
+          "game": {
+            "type": "string",
+            "description": "Game id, echoed."
+          },
+          "dataset": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Dataset the game maps to, or null when unknown."
+          },
+          "available": {
+            "type": "boolean",
+            "description": "Always false."
+          },
+          "status": {
+            "type": "string",
+            "description": "Always \"not available\"."
+          },
+          "exploitability": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Always null: no figure is published or estimated."
+          },
+          "iterations": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Always null."
+          },
+          "convergence": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Always null."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why no number is returned."
+          }
+        }
       }
     },
     {
@@ -698,7 +2402,8 @@
             "enum": [
               "33",
               "75"
-            ]
+            ],
+            "description": "Bet-size tree. \"33\" = 33% pot on the flop, then 75% pot on the turn and river, plus all-in. \"75\" = 75% pot on every street, plus all-in. PLO5 packs are solved on \"33\" only."
           },
           "board": {
             "type": "string",
@@ -718,12 +2423,14 @@
           },
           "hand": {
             "type": "string",
-            "maxLength": 40
+            "maxLength": 40,
+            "description": "Optional exact combo (AsKh) or hand class (AKs) for one frequency instead of reading the whole range."
           },
           "minFreq": {
             "type": "number",
             "minimum": 0,
-            "maximum": 1
+            "maximum": 1,
+            "description": "Drop classes at or below this weight. Default 0."
           }
         },
         "required": [
@@ -733,6 +2440,120 @@
           "path"
         ],
         "additionalProperties": false
+      },
+      "title": "Get postflop action range",
+      "annotations": {
+        "title": "Get postflop action range",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "The range a player takes one flop action with, as hand-class weights.",
+        "properties": {
+          "pack": {
+            "type": "string",
+            "description": "Pack id the range was read from, after tree resolution."
+          },
+          "tree": {
+            "type": "string",
+            "description": "Bet-size tree, \"33\" or \"75\"."
+          },
+          "board": {
+            "type": "string",
+            "description": "Canonical board as stored in the pack."
+          },
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "One flop action."
+            },
+            "description": "Flop actions, ending in the action asked for."
+          },
+          "action": {
+            "type": "string",
+            "description": "The action whose range this is."
+          },
+          "range": {
+            "type": "string",
+            "description": "Hand-class weights as \"AA:1,AKs:0.42,…\", the preflop range format."
+          },
+          "weights": {
+            "type": "object",
+            "description": "Hand class to frequency. An omitted class has weight 0.",
+            "additionalProperties": {
+              "type": "number",
+              "description": "Action frequency from 0 to 1."
+            }
+          },
+          "hand": {
+            "type": "object",
+            "description": "The requested hand, when one was asked for.",
+            "properties": {
+              "hand": {
+                "type": "string",
+                "description": "Hand or class the frequency belongs to."
+              },
+              "frequency": {
+                "type": "number",
+                "description": "Reach-weighted frequency from 0 to 1."
+              }
+            }
+          },
+          "summary": {
+            "type": "object",
+            "description": "What the compact range left out, so nothing looks complete when it is sampled.",
+            "properties": {
+              "nonzeroHands": {
+                "type": "integer",
+                "description": "Hand classes with a frequency above 0."
+              },
+              "pureHands": {
+                "type": "integer",
+                "description": "Classes at frequency 0.995 or higher."
+              },
+              "mixedHands": {
+                "type": "integer",
+                "description": "Classes strictly between 0.005 and 0.995."
+              },
+              "matchingHands": {
+                "type": "integer",
+                "description": "plo5: classes that take the action before the cut."
+              },
+              "minFreq": {
+                "type": "number",
+                "description": "plo5: the frequency floor applied."
+              },
+              "pureInReturned": {
+                "type": "integer",
+                "description": "plo5: pure classes among the returned rows."
+              },
+              "mixedInReturned": {
+                "type": "integer",
+                "description": "plo5: mixed classes among the returned rows."
+              },
+              "returned": {
+                "type": "integer",
+                "description": "Rows in this response."
+              },
+              "omitted": {
+                "type": "integer",
+                "description": "Rows dropped by the compact cut."
+              },
+              "classes": {
+                "type": "integer",
+                "description": "Postflop: hand classes with reach at the node."
+              }
+            }
+          },
+          "error": {
+            "type": "string",
+            "description": "Present instead of a payload when the request named something that does not exist. No figure is estimated in its place."
+          }
+        }
       }
     },
     {
@@ -751,7 +2572,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Only hands from this upload session (see list_my_sessions)."
           },
           "game_type": {
             "anyOf": [
@@ -767,7 +2589,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Only hands of this game type. Matches hole-card count."
           },
           "table_size": {
             "anyOf": [
@@ -779,12 +2602,14 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Only hands dealt at tables of this many seats."
           },
           "filter": {
             "anyOf": [
               {
                 "type": "object",
+                "description": "Hand-level filters. Every field is optional; null means the filter is not applied.",
                 "properties": {
                   "position": {
                     "anyOf": [
@@ -809,7 +2634,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Keep hands where hero sat in one of these seats."
                   },
                   "wasSrp": {
                     "anyOf": [
@@ -819,7 +2645,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Hand was a single-raised pot."
                   },
                   "wasThreeBetPot": {
                     "anyOf": [
@@ -829,7 +2656,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Hand was a 3-bet pot."
                   },
                   "isPfr": {
                     "anyOf": [
@@ -839,7 +2667,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Hero was the preflop raiser."
                   },
                   "isIpVsPfr": {
                     "anyOf": [
@@ -849,7 +2678,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Hero was in position against the preflop raiser."
                   },
                   "sawFlop": {
                     "anyOf": [
@@ -859,7 +2689,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Hero saw a flop."
                   },
                   "vpip": {
                     "anyOf": [
@@ -869,7 +2700,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Hero put money in voluntarily."
                   },
                   "pfr": {
                     "anyOf": [
@@ -879,7 +2711,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Hero raised preflop."
                   },
                   "rfiOpp": {
                     "anyOf": [
@@ -889,7 +2722,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Hero had a raise-first-in opportunity (folded to hero)."
                   },
                   "rfi": {
                     "anyOf": [
@@ -899,7 +2733,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Hero raised first in."
                   },
                   "threeBet": {
                     "anyOf": [
@@ -909,7 +2744,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Hero 3-bet."
                   },
                   "facedThreeBet": {
                     "anyOf": [
@@ -919,7 +2755,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Hero's open was 3-bet."
                   },
                   "foldedToThreeBet": {
                     "anyOf": [
@@ -929,7 +2766,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Hero folded to a 3-bet."
                   },
                   "limped": {
                     "anyOf": [
@@ -939,7 +2777,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Hero open-limped."
                   },
                   "facedLimp": {
                     "anyOf": [
@@ -949,7 +2788,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Hero acted after an opponent's open limp."
                   },
                   "vsThreeBetAction": {
                     "anyOf": [
@@ -962,13 +2802,13 @@
                             "call",
                             "raise"
                           ]
-                        },
-                        "description": "Opener's action vs a 3-bet: fold, call, or raise (4-bet)."
+                        }
                       },
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Opener's action vs a 3-bet: fold, call, or raise (4-bet)."
                   },
                   "sawShowdown": {
                     "anyOf": [
@@ -978,7 +2818,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Hand reached showdown."
                   },
                   "wonAtShowdown": {
                     "anyOf": [
@@ -988,7 +2829,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Hero won at showdown."
                   },
                   "flopFirstAction": {
                     "anyOf": [
@@ -1008,7 +2850,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Hero's first action on the flop."
                   },
                   "flopFirstResponseToBet": {
                     "anyOf": [
@@ -1028,7 +2871,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Hero's first action facing a flop bet."
                   },
                   "turnFirstAction": {
                     "anyOf": [
@@ -1048,7 +2892,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Hero's first action on the turn."
                   },
                   "turnFirstResponseToBet": {
                     "anyOf": [
@@ -1068,7 +2913,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Hero's first action facing a turn bet."
                   },
                   "riverFirstAction": {
                     "anyOf": [
@@ -1088,7 +2934,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Hero's first action on the river."
                   },
                   "riverFirstResponseToBet": {
                     "anyOf": [
@@ -1108,7 +2955,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Hero's first action facing a river bet."
                   },
                   "flopFacedBetPctPot": {
                     "anyOf": [
@@ -1119,25 +2967,25 @@
                             "anyOf": [
                               {
                                 "type": "number",
-                                "minimum": 0,
-                                "description": "Inclusive lower bound, % of pot."
+                                "minimum": 0
                               },
                               {
                                 "type": "null"
                               }
-                            ]
+                            ],
+                            "description": "Inclusive lower bound, % of pot."
                           },
                           "max": {
                             "anyOf": [
                               {
                                 "type": "number",
-                                "minimum": 0,
-                                "description": "Exclusive upper bound, % of pot."
+                                "minimum": 0
                               },
                               {
                                 "type": "null"
                               }
-                            ]
+                            ],
+                            "description": "Exclusive upper bound, % of pot."
                           }
                         },
                         "additionalProperties": false
@@ -1145,7 +2993,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Size of the flop bet hero faced, as % of pot."
                   },
                   "turnFacedBetPctPot": {
                     "anyOf": [
@@ -1156,25 +3005,25 @@
                             "anyOf": [
                               {
                                 "type": "number",
-                                "minimum": 0,
-                                "description": "Inclusive lower bound, % of pot."
+                                "minimum": 0
                               },
                               {
                                 "type": "null"
                               }
-                            ]
+                            ],
+                            "description": "Inclusive lower bound, % of pot."
                           },
                           "max": {
                             "anyOf": [
                               {
                                 "type": "number",
-                                "minimum": 0,
-                                "description": "Exclusive upper bound, % of pot."
+                                "minimum": 0
                               },
                               {
                                 "type": "null"
                               }
-                            ]
+                            ],
+                            "description": "Exclusive upper bound, % of pot."
                           }
                         },
                         "additionalProperties": false
@@ -1182,7 +3031,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Size of the turn bet hero faced, as % of pot."
                   },
                   "riverFacedBetPctPot": {
                     "anyOf": [
@@ -1193,25 +3043,25 @@
                             "anyOf": [
                               {
                                 "type": "number",
-                                "minimum": 0,
-                                "description": "Inclusive lower bound, % of pot."
+                                "minimum": 0
                               },
                               {
                                 "type": "null"
                               }
-                            ]
+                            ],
+                            "description": "Inclusive lower bound, % of pot."
                           },
                           "max": {
                             "anyOf": [
                               {
                                 "type": "number",
-                                "minimum": 0,
-                                "description": "Exclusive upper bound, % of pot."
+                                "minimum": 0
                               },
                               {
                                 "type": "null"
                               }
-                            ]
+                            ],
+                            "description": "Exclusive upper bound, % of pot."
                           }
                         },
                         "additionalProperties": false
@@ -1219,7 +3069,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Size of the river bet hero faced, as % of pot."
                   },
                   "flopBetPctPot": {
                     "anyOf": [
@@ -1230,25 +3081,25 @@
                             "anyOf": [
                               {
                                 "type": "number",
-                                "minimum": 0,
-                                "description": "Inclusive lower bound, % of pot."
+                                "minimum": 0
                               },
                               {
                                 "type": "null"
                               }
-                            ]
+                            ],
+                            "description": "Inclusive lower bound, % of pot."
                           },
                           "max": {
                             "anyOf": [
                               {
                                 "type": "number",
-                                "minimum": 0,
-                                "description": "Exclusive upper bound, % of pot."
+                                "minimum": 0
                               },
                               {
                                 "type": "null"
                               }
-                            ]
+                            ],
+                            "description": "Exclusive upper bound, % of pot."
                           }
                         },
                         "additionalProperties": false
@@ -1256,7 +3107,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Size of hero's flop bet, as % of pot."
                   },
                   "turnBetPctPot": {
                     "anyOf": [
@@ -1267,25 +3119,25 @@
                             "anyOf": [
                               {
                                 "type": "number",
-                                "minimum": 0,
-                                "description": "Inclusive lower bound, % of pot."
+                                "minimum": 0
                               },
                               {
                                 "type": "null"
                               }
-                            ]
+                            ],
+                            "description": "Inclusive lower bound, % of pot."
                           },
                           "max": {
                             "anyOf": [
                               {
                                 "type": "number",
-                                "minimum": 0,
-                                "description": "Exclusive upper bound, % of pot."
+                                "minimum": 0
                               },
                               {
                                 "type": "null"
                               }
-                            ]
+                            ],
+                            "description": "Exclusive upper bound, % of pot."
                           }
                         },
                         "additionalProperties": false
@@ -1293,7 +3145,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Size of hero's turn bet, as % of pot."
                   },
                   "riverBetPctPot": {
                     "anyOf": [
@@ -1304,25 +3157,25 @@
                             "anyOf": [
                               {
                                 "type": "number",
-                                "minimum": 0,
-                                "description": "Inclusive lower bound, % of pot."
+                                "minimum": 0
                               },
                               {
                                 "type": "null"
                               }
-                            ]
+                            ],
+                            "description": "Inclusive lower bound, % of pot."
                           },
                           "max": {
                             "anyOf": [
                               {
                                 "type": "number",
-                                "minimum": 0,
-                                "description": "Exclusive upper bound, % of pot."
+                                "minimum": 0
                               },
                               {
                                 "type": "null"
                               }
-                            ]
+                            ],
+                            "description": "Exclusive upper bound, % of pot."
                           }
                         },
                         "additionalProperties": false
@@ -1330,7 +3183,8 @@
                       {
                         "type": "null"
                       }
-                    ]
+                    ],
+                    "description": "Size of hero's river bet, as % of pot."
                   }
                 },
                 "additionalProperties": false
@@ -1338,7 +3192,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Hand-level filters, all optional."
           },
           "gto_vs_3bet_bucket": {
             "anyOf": [
@@ -1355,7 +3210,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Solver grade bucket for hero's action vs a 3-bet. Grades are not computed, so any value matches nothing rather than inventing a frequency."
           },
           "gto_plo5_rfi_bucket": {
             "anyOf": [
@@ -1372,7 +3228,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Solver grade bucket for PLO5 raise-first-in. Grades are not computed, so any value matches nothing."
           },
           "sort": {
             "type": "string",
@@ -1381,13 +3238,15 @@
               "biggest_win",
               "biggest_loss"
             ],
-            "default": "biggest_loss"
+            "default": "biggest_loss",
+            "description": "Row order: newest first, largest win first, or largest loss first (the default)."
           },
           "limit": {
             "type": "integer",
             "minimum": 1,
             "maximum": 50,
-            "default": 10
+            "default": 10,
+            "description": "Hands to return, 1 to 50."
           }
         },
         "required": [
@@ -1395,6 +3254,179 @@
           "limit"
         ],
         "additionalProperties": false
+      },
+      "title": "Find my hands",
+      "annotations": {
+        "title": "Find my hands",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "Hands this account has uploaded.",
+        "properties": {
+          "hands": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One uploaded hand.",
+              "properties": {
+                "hand_id": {
+                  "type": "string",
+                  "description": "Stable id for this hand."
+                },
+                "session_id": {
+                  "type": "string",
+                  "description": "Upload session the hand came from."
+                },
+                "source_hand_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Hand id printed by the original site."
+                },
+                "handAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Hand timestamp as written in the history."
+                },
+                "timezone": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Timezone label from the history."
+                },
+                "position": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Hero's seat, e.g. BTN."
+                },
+                "cards": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Hero's hole cards."
+                },
+                "game": {
+                  "type": "string",
+                  "description": "Game type: \"NLHE\", \"PLO\", \"PLO5\", or \"PLO6\"."
+                },
+                "table_size": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Seats at the table."
+                },
+                "board": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Board as dealt."
+                },
+                "potType": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Preflop pot type, e.g. \"srp\" or \"3bet\"."
+                },
+                "preflop": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "One preflop action line."
+                  },
+                  "description": "Preflop action lines."
+                },
+                "flop": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "One flop action line."
+                  },
+                  "description": "Flop action lines."
+                },
+                "turn": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "One turn action line."
+                  },
+                  "description": "Turn action lines."
+                },
+                "river": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "One river action line."
+                  },
+                  "description": "River action lines."
+                },
+                "netBb": {
+                  "type": "number",
+                  "description": "Hero's result in big blinds."
+                },
+                "vsThreeBetAction": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Hero's action facing a 3-bet: \"fold\", \"call\", or \"raise\"."
+                },
+                "gto_vs_3bet_bucket": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Solver grade bucket. Not filled: grades are not computed."
+                },
+                "gto_plo5_rfi_bucket": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Solver grade bucket. Not filled: grades are not computed."
+                },
+                "gto_status": {
+                  "type": "string",
+                  "description": "Always \"not_graded\": no solver frequency is attached to uploaded hands."
+                }
+              }
+            },
+            "description": "Matching hands, sorted as requested."
+          },
+          "total": {
+            "type": "integer",
+            "description": "Matching hands before the limit."
+          },
+          "returned": {
+            "type": "integer",
+            "description": "Hands in this response."
+          },
+          "gto": {
+            "type": "string",
+            "description": "Always \"not graded\": solver grades are not attached."
+          },
+          "gtoNote": {
+            "type": "string",
+            "description": "Why a solver-grade filter matches nothing."
+          },
+          "hint": {
+            "type": "string",
+            "description": "Where to upload hands when the account has none."
+          }
+        }
       }
     },
     {
@@ -1413,19 +3445,65 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Only this upload session's hands. Omit for the whole account."
           },
           "max_points": {
             "type": "integer",
             "minimum": 2,
             "maximum": 200,
-            "default": 80
+            "default": 80,
+            "description": "Points on the curve after downsampling, 2 to 200."
           }
         },
         "required": [
           "max_points"
         ],
         "additionalProperties": false
+      },
+      "title": "Get my results curve",
+      "annotations": {
+        "title": "Get my results curve",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "Cumulative result per hand, for a winnings curve.",
+        "properties": {
+          "points": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One point on the curve.",
+              "properties": {
+                "hand": {
+                  "type": "integer",
+                  "description": "Hand number, oldest first."
+                },
+                "bb": {
+                  "type": "number",
+                  "description": "Cumulative result in big blinds."
+                }
+              }
+            },
+            "description": "Downsampled curve, oldest to newest."
+          },
+          "totalHands": {
+            "type": "integer",
+            "description": "Hands behind the curve."
+          },
+          "netBb": {
+            "type": "number",
+            "description": "Final cumulative result in big blinds."
+          },
+          "hint": {
+            "type": "string",
+            "description": "Where to upload hands when the account has none."
+          }
+        }
       }
     },
     {
@@ -1437,13 +3515,92 @@
           "session_id": {
             "type": "string",
             "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "Session id from list_my_sessions."
           }
         },
         "required": [
           "session_id"
         ],
         "additionalProperties": false
+      },
+      "title": "Summarize a session",
+      "annotations": {
+        "title": "Summarize a session",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "Headline numbers and HUD rates for one uploaded session.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Session id."
+          },
+          "hero": {
+            "type": "string",
+            "description": "Hero name in the history."
+          },
+          "game_type": {
+            "type": "string",
+            "description": "Game type: \"NLHE\", \"PLO\", \"PLO5\", or \"PLO6\"."
+          },
+          "startedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "First hand timestamp."
+          },
+          "endedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Last hand timestamp."
+          },
+          "hands": {
+            "type": "integer",
+            "description": "Hands in the session."
+          },
+          "netBb": {
+            "type": "number",
+            "description": "Session result in big blinds."
+          },
+          "hud": {
+            "type": "object",
+            "description": "HUD rates over this session, as percentages.",
+            "properties": {
+              "vpip": {
+                "type": "number",
+                "description": "Voluntarily put money in pot, percent."
+              },
+              "pfr": {
+                "type": "number",
+                "description": "Preflop raise, percent."
+              },
+              "threeBet": {
+                "type": "number",
+                "description": "3-bet, percent."
+              },
+              "limp": {
+                "type": "number",
+                "description": "Open limp, percent."
+              },
+              "sample": {
+                "type": "integer",
+                "description": "Hands the rates are computed over."
+              }
+            }
+          },
+          "error": {
+            "type": "string",
+            "description": "Present instead of a payload when the request named something that does not exist. No figure is estimated in its place."
+          }
+        }
       }
     },
     {
@@ -1456,7 +3613,8 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 50,
-            "default": 10
+            "default": 10,
+            "description": "Sessions to return, 1 to 50."
           },
           "game_type": {
             "anyOf": [
@@ -1472,13 +3630,88 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Only sessions containing this game type."
           }
         },
         "required": [
           "limit"
         ],
         "additionalProperties": false
+      },
+      "title": "List my sessions",
+      "annotations": {
+        "title": "List my sessions",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "Recent uploaded sessions, newest first.",
+        "properties": {
+          "sessions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One upload session.",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Session id."
+                },
+                "hero": {
+                  "type": "string",
+                  "description": "Hero name in the history."
+                },
+                "game_type": {
+                  "type": "string",
+                  "description": "Dominant game type in the session."
+                },
+                "game_types": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "Game type."
+                  },
+                  "description": "Every game type in the session."
+                },
+                "startedAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "First hand timestamp."
+                },
+                "endedAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Last hand timestamp."
+                },
+                "hands": {
+                  "type": "integer",
+                  "description": "Hands in the session."
+                },
+                "netBb": {
+                  "type": "number",
+                  "description": "Session result in big blinds."
+                },
+                "filename": {
+                  "type": "string",
+                  "description": "Uploaded filename."
+                }
+              }
+            },
+            "description": "Sessions, newest first."
+          },
+          "hint": {
+            "type": "string",
+            "description": "Where to upload hands when the account has none."
+          }
+        }
       }
     },
     {
@@ -1491,13 +3724,124 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 500,
-            "default": 200
+            "default": 200,
+            "description": "Tournament summaries to include, 1 to 500."
           }
         },
         "required": [
           "limit"
         ],
         "additionalProperties": false
+      },
+      "title": "Get my tournament results",
+      "annotations": {
+        "title": "Get my tournament results",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "MTT results from uploaded tournament summaries. Money is in cents.",
+        "properties": {
+          "tournaments": {
+            "type": "integer",
+            "description": "Tournament summaries counted."
+          },
+          "buyInCents": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Total buy-ins, or null when one buy-in is unknown."
+          },
+          "receivedCents": {
+            "type": "number",
+            "description": "Total prize money received."
+          },
+          "netProfitCents": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Received minus buy-ins, or null when a buy-in is unknown."
+          },
+          "roi": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Return on investment as a ratio, or null."
+          },
+          "itmPct": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Share of tournaments that cashed, 0 to 1, or null."
+          },
+          "recent": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One tournament.",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Row id."
+                },
+                "sourceId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Tournament id from the summary file."
+                },
+                "game": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Game label from the summary."
+                },
+                "buyInCents": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Buy-in in cents."
+                },
+                "fieldSize": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Entrants."
+                },
+                "finish": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Finishing place."
+                },
+                "receivedCents": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Prize received in cents."
+                }
+              }
+            },
+            "description": "Tournaments, newest first."
+          },
+          "note": {
+            "type": "string",
+            "description": "Present when no tournament summaries have been uploaded."
+          }
+        }
       }
     },
     {
@@ -1510,7 +3854,8 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 500,
-            "default": 50
+            "default": 50,
+            "description": "Opponents to return, 1 to 500."
           },
           "name": {
             "anyOf": [
@@ -1520,7 +3865,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Case-insensitive substring of the opponent's screen name."
           },
           "hero": {
             "anyOf": [
@@ -1530,7 +3876,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Only hands where this hero name was seated."
           },
           "game_type": {
             "anyOf": [
@@ -1540,12 +3887,14 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Only hands of this game type, e.g. \"NLHE\" or \"PLO\"."
           },
           "min_hands": {
             "type": "integer",
             "minimum": 1,
-            "default": 1
+            "default": 1,
+            "description": "Drop opponents seen in fewer hands than this."
           },
           "sort": {
             "type": "string",
@@ -1555,7 +3904,8 @@
               "toughest",
               "softest"
             ],
-            "default": "hands"
+            "default": "hands",
+            "description": "Row order: most hands, most recent, or by hero's bb/100 against them (toughest = worst for hero)."
           }
         },
         "required": [
@@ -1564,6 +3914,100 @@
           "sort"
         ],
         "additionalProperties": false
+      },
+      "title": "List my opponents",
+      "annotations": {
+        "title": "List my opponents",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "Opponents tracked across this account's uploaded hands.",
+        "properties": {
+          "opponents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One opponent.",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Opponent id for get_opponent_notes."
+                },
+                "displayName": {
+                  "type": "string",
+                  "description": "Screen name as written in the history."
+                },
+                "handCount": {
+                  "type": "integer",
+                  "description": "Hands the opponent appears in."
+                },
+                "handsVsHero": {
+                  "type": "integer",
+                  "description": "Hands played against hero."
+                },
+                "heroBb100Vs": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Hero's bb/100 in hands against this opponent."
+                },
+                "notesCount": {
+                  "type": "integer",
+                  "description": "Leak notes available."
+                },
+                "notes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "One leak note with its sample size."
+                  },
+                  "description": "Leak notes."
+                },
+                "gameTypes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "Game type."
+                  },
+                  "description": "Game types seen."
+                },
+                "heroes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "Hero name."
+                  },
+                  "description": "Hero accounts that faced this opponent."
+                },
+                "lastSeen": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Most recent hand timestamp."
+                },
+                "net": {
+                  "type": "number",
+                  "description": "Hero's net big blinds in those hands."
+                },
+                "cbetFaced": {
+                  "type": "integer",
+                  "description": "Flop c-bets the opponent faced."
+                },
+                "cbetFold": {
+                  "type": "integer",
+                  "description": "Those c-bets the opponent folded to."
+                }
+              }
+            },
+            "description": "Opponents, sorted as requested."
+          }
+        }
       }
     },
     {
@@ -1575,13 +4019,48 @@
           "opponent_id": {
             "type": "string",
             "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "Opponent id from list_my_opponents."
           }
         },
         "required": [
           "opponent_id"
         ],
         "additionalProperties": false
+      },
+      "title": "Get opponent notes",
+      "annotations": {
+        "title": "Get opponent notes",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "Leak notes computed from uploaded hands for one opponent.",
+        "properties": {
+          "opponent_id": {
+            "type": "string",
+            "description": "Opponent id, echoed."
+          },
+          "display_name": {
+            "type": "string",
+            "description": "Screen name as written in the history."
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "One note, with the sample size it rests on."
+            },
+            "description": "Notes, or a single line saying the sample is too small."
+          },
+          "error": {
+            "type": "string",
+            "description": "Present instead of a payload when the request named something that does not exist. No figure is estimated in its place."
+          }
+        }
       }
     },
     {
@@ -1600,7 +4079,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Only this opponent's limps (see list_my_opponents). Omit for every tracked villain."
           },
           "session_id": {
             "anyOf": [
@@ -1612,7 +4092,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Only hands from this upload session."
           },
           "position": {
             "anyOf": [
@@ -1637,7 +4118,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Only limps from these seats."
           },
           "table_size": {
             "anyOf": [
@@ -1649,7 +4131,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Only hands dealt at tables of this many seats."
           },
           "game_type": {
             "anyOf": [
@@ -1665,19 +4148,83 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Only hands of this game type."
           },
           "limit": {
             "type": "integer",
             "minimum": 1,
             "maximum": 169,
-            "default": 30
+            "default": 30,
+            "description": "Hole-card classes to return, most frequent first, 1 to 169."
           }
         },
         "required": [
           "limit"
         ],
         "additionalProperties": false
+      },
+      "title": "Get an opponent's limp range",
+      "annotations": {
+        "title": "Get an opponent's limp range",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "Shown-hand first-in limp range from uploaded hands. Observed counts, not a solver range.",
+        "properties": {
+          "sample": {
+            "type": "integer",
+            "description": "Shown limped hands behind the counts."
+          },
+          "note": {
+            "type": "string",
+            "description": "That the sample is showdown-only and the counts are observations."
+          },
+          "classes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One observed hole-card class.",
+              "properties": {
+                "hand": {
+                  "type": "string",
+                  "description": "169-grid class, e.g. AKs."
+                },
+                "count": {
+                  "type": "integer",
+                  "description": "Times the class was shown."
+                }
+              }
+            },
+            "description": "Observed classes, most frequent first. Counts, not solver frequencies."
+          },
+          "classesByPosition": {
+            "type": "object",
+            "description": "Seat label to that seat's observed classes.",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "description": "One observed hole-card class.",
+                "properties": {
+                  "hand": {
+                    "type": "string",
+                    "description": "169-grid class, e.g. AKs."
+                  },
+                  "count": {
+                    "type": "integer",
+                    "description": "Times the class was shown."
+                  }
+                }
+              },
+              "description": "Observed classes, most frequent first. Counts, not solver frequencies."
+            }
+          }
+        }
       }
     },
     {
@@ -1689,51 +4236,62 @@
           "title": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 120
+            "maxLength": 120,
+            "description": "Label for the job, 1 to 120 characters."
           },
           "board": {
             "type": "string",
-            "minLength": 5
+            "minLength": 5,
+            "description": "Board to solve, e.g. \"3h 3d 2s\"."
           },
           "pot": {
             "type": "number",
-            "exclusiveMinimum": 0
+            "exclusiveMinimum": 0,
+            "description": "Starting pot in big blinds."
           },
           "effective_stack": {
             "type": "number",
-            "exclusiveMinimum": 0
+            "exclusiveMinimum": 0,
+            "description": "Effective stack behind, in big blinds."
           },
           "oop_range": {
-            "type": "string"
+            "type": "string",
+            "description": "Out-of-position range as hand-class weights, e.g. \"AA:1,AKs:0.42\". Defaults are left to the solver config."
           },
           "ip_range": {
-            "type": "string"
+            "type": "string",
+            "description": "In-position range in the same weights format."
           },
           "bet_sizes": {
             "type": "array",
             "items": {
               "type": "number",
               "exclusiveMinimum": 0
-            }
+            },
+            "description": "Bet sizes as fractions of the pot, e.g. [0.33, 0.75]."
           },
           "add_allin": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Add an all-in branch alongside the bet sizes."
           },
           "max_aggressions": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 4
+            "maximum": 4,
+            "description": "Raises allowed per street, 1 to 4."
           },
           "iterations": {
             "type": "integer",
             "minimum": 50,
-            "maximum": 5000
+            "maximum": 5000,
+            "description": "Requested solver iterations, 50 to 5000."
           },
           "tags": {
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "Free-form tags stored with the job."
           }
         },
         "required": [
@@ -1743,6 +4301,63 @@
           "effective_stack"
         ],
         "additionalProperties": false
+      },
+      "title": "Record a solve request",
+      "annotations": {
+        "title": "Record a solve request",
+        "readOnlyHint": false,
+        "idempotentHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "One recorded solve request. Dispatch is not configured, so a job stays pending and never gets a solution id.",
+        "properties": {
+          "queue_id": {
+            "type": "integer",
+            "description": "Id for get_queued_solve."
+          },
+          "status": {
+            "type": "string",
+            "description": "\"pending\", \"running\", \"done\", or \"failed\"."
+          },
+          "title": {
+            "type": "string",
+            "description": "Title given when the job was recorded."
+          },
+          "board": {
+            "type": "string",
+            "description": "Board for the requested solve."
+          },
+          "pot": {
+            "type": "number",
+            "description": "Pot in big blinds."
+          },
+          "effective_stack": {
+            "type": "number",
+            "description": "Effective stack in big blinds."
+          },
+          "solution_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Always null while dispatch is disabled."
+          },
+          "dispatch": {
+            "type": "string",
+            "description": "Always \"not_configured\"."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why the job does not start a solve."
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "ISO timestamp the job was recorded."
+          }
+        }
       }
     },
     {
@@ -1753,13 +4368,71 @@
         "properties": {
           "queue_id": {
             "type": "integer",
-            "exclusiveMinimum": 0
+            "exclusiveMinimum": 0,
+            "description": "Queue id returned by enqueue_solve."
           }
         },
         "required": [
           "queue_id"
         ],
         "additionalProperties": false
+      },
+      "title": "Get a queued solve",
+      "annotations": {
+        "title": "Get a queued solve",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "One recorded solve request. Dispatch is not configured, so a job stays pending and never gets a solution id.",
+        "properties": {
+          "queue_id": {
+            "type": "integer",
+            "description": "Id for get_queued_solve."
+          },
+          "status": {
+            "type": "string",
+            "description": "\"pending\", \"running\", \"done\", or \"failed\"."
+          },
+          "title": {
+            "type": "string",
+            "description": "Title given when the job was recorded."
+          },
+          "board": {
+            "type": "string",
+            "description": "Board for the requested solve."
+          },
+          "pot": {
+            "type": "number",
+            "description": "Pot in big blinds."
+          },
+          "effective_stack": {
+            "type": "number",
+            "description": "Effective stack in big blinds."
+          },
+          "solution_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Always null while dispatch is disabled."
+          },
+          "dispatch": {
+            "type": "string",
+            "description": "Always \"not_configured\"."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why the job does not start a solve."
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "ISO timestamp the job was recorded."
+          }
+        }
       }
     },
     {
@@ -1772,13 +4445,81 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 50,
-            "default": 20
+            "default": 20,
+            "description": "Jobs to return, 1 to 50."
           }
         },
         "required": [
           "limit"
         ],
         "additionalProperties": false
+      },
+      "title": "List my queued solves",
+      "annotations": {
+        "title": "List my queued solves",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "This account's solver-queue jobs, newest first.",
+        "properties": {
+          "solves": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One recorded solve request. Dispatch is not configured, so a job stays pending and never gets a solution id.",
+              "properties": {
+                "queue_id": {
+                  "type": "integer",
+                  "description": "Id for get_queued_solve."
+                },
+                "status": {
+                  "type": "string",
+                  "description": "\"pending\", \"running\", \"done\", or \"failed\"."
+                },
+                "title": {
+                  "type": "string",
+                  "description": "Title given when the job was recorded."
+                },
+                "board": {
+                  "type": "string",
+                  "description": "Board for the requested solve."
+                },
+                "pot": {
+                  "type": "number",
+                  "description": "Pot in big blinds."
+                },
+                "effective_stack": {
+                  "type": "number",
+                  "description": "Effective stack in big blinds."
+                },
+                "solution_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Always null while dispatch is disabled."
+                },
+                "dispatch": {
+                  "type": "string",
+                  "description": "Always \"not_configured\"."
+                },
+                "reason": {
+                  "type": "string",
+                  "description": "Why the job does not start a solve."
+                },
+                "createdAt": {
+                  "type": "string",
+                  "description": "ISO timestamp the job was recorded."
+                }
+              }
+            },
+            "description": "Queued jobs. None are dispatched."
+          }
+        }
       }
     },
     {
@@ -1791,13 +4532,40 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 50,
-            "default": 20
+            "default": 20,
+            "description": "Solutions to return, 1 to 50."
           }
         },
         "required": [
           "limit"
         ],
         "additionalProperties": false
+      },
+      "title": "List my saved solutions",
+      "annotations": {
+        "title": "List my saved solutions",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "Finished postflop solutions saved for this account.",
+        "properties": {
+          "solutions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One finished solution."
+            },
+            "description": "Empty while solver dispatch is disabled."
+          },
+          "note": {
+            "type": "string",
+            "description": "Why no solution is marked done."
+          }
+        }
       }
     },
     {
@@ -1807,6 +4575,43 @@
         "type": "object",
         "properties": {},
         "additionalProperties": false
+      },
+      "title": "Get the hand-upload link",
+      "annotations": {
+        "title": "Get the hand-upload link",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "Hosted upload page for hand histories.",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "URL to hand to the user, signed when signing is configured."
+          },
+          "expiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "When the signed token expires, or null when unsigned."
+          },
+          "tokenAttached": {
+            "type": "boolean",
+            "description": "Whether the URL carries a signed token for this account."
+          },
+          "resource": {
+            "type": "string",
+            "description": "MCP resource URI that returns the same payload."
+          },
+          "primary": {
+            "type": "boolean",
+            "description": "Always true: this is the primary upload path."
+          }
+        }
       }
     },
     {
@@ -1816,7 +4621,8 @@
         "type": "object",
         "properties": {
           "filename": {
-            "type": "string"
+            "type": "string",
+            "description": "Name to record for the paste. Defaults to \"paste.txt\"."
           },
           "text": {
             "type": "string",
@@ -1828,6 +4634,55 @@
           "text"
         ],
         "additionalProperties": false
+      },
+      "title": "Upload a hand history",
+      "annotations": {
+        "title": "Upload a hand history",
+        "readOnlyHint": false,
+        "idempotentHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "Result of ingesting one pasted hand history.",
+        "properties": {
+          "filename": {
+            "type": "string",
+            "description": "Filename recorded for the paste."
+          },
+          "handsParsed": {
+            "type": "integer",
+            "description": "Hands parsed."
+          },
+          "tournamentsParsed": {
+            "type": "integer",
+            "description": "Tournament summaries parsed."
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "One parse error."
+            },
+            "description": "Parse errors, if any."
+          },
+          "sessionId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Session id for the stored hands, or null when nothing parsed."
+          },
+          "persistence": {
+            "type": "string",
+            "description": "Where the hands live, \"process_memory\"."
+          },
+          "persisted": {
+            "type": "boolean",
+            "description": "Always false: nothing is written to durable storage."
+          }
+        }
       }
     }
   ]
