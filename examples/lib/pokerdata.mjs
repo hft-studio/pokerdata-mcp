@@ -72,6 +72,35 @@ export async function restGet(pathOrUrl, { key = API_KEY } = {}) {
   return { url, status: res.status, contentType: res.headers.get("content-type") || "", body, text };
 }
 
+// Counts for a compact get_range reply, computed from its [hand, frequency, evSb]
+// rows so they always add up: nonzeroHands = pureHands + mixedHands, where pure
+// means frequency exactly 1 and mixed means strictly between 0 and 1. The
+// server's own `summary` does not add up (it buckets 0.995 as pure and drops
+// 0.005 from both buckets), so examples use this instead.
+// Pass every row: compact get_range returns 120 rows unless `limit` (max 500)
+// is raised. `combos` weights hold'em classes as 6 (pair), 4 (suited) or 12
+// (offsuit) and is null when a hand is not a hold'em class.
+export function rangeStats(rows) {
+  const holdemCombos = (h) => (/^([2-9TJQKA])\1$/.test(h) ? 6 : /^[2-9TJQKA]{2}s$/.test(h) ? 4 : /^[2-9TJQKA]{2}o$/.test(h) ? 12 : null);
+  const nonzero = rows.filter(([, f]) => f > 0);
+  const pureHands = nonzero.filter(([, f]) => f === 1).length;
+  let combos = 0;
+  for (const [h, f] of nonzero) {
+    const c = holdemCombos(h);
+    if (c === null) {
+      combos = null;
+      break;
+    }
+    combos += f * c;
+  }
+  return {
+    nonzeroHands: nonzero.length,
+    pureHands,
+    mixedHands: nonzero.length - pureHands,
+    combos: combos === null ? null : Math.round(combos * 100) / 100,
+  };
+}
+
 // Shrink a JSON value for display: arrays and large objects keep their first
 // items and say how many were dropped; long strings are cut.
 export function trim(value, { maxArray = 4, maxKeys = 12, maxString = 300, depth = 0, maxDepth = 6 } = {}) {

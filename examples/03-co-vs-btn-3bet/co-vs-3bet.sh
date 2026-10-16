@@ -8,7 +8,7 @@ source "$(dirname "$0")/../lib/mcp.sh"
 mcp_call get_node '{"game":"nl","stack":100,"history":"UTG_Fold_HJ_Fold_CO_60%_BTN"}'
 
 # 2. BTN's 3-bet range.
-mcp_call get_range '{"game":"nl","stack":100,"spot":"UTG_Fold_HJ_Fold_CO_60%_BTN_77%"}' --array 8
+mcp_call get_range '{"game":"nl","stack":100,"spot":"UTG_Fold_HJ_Fold_CO_60%_BTN_77%","limit":500}' --array 8
 
 # 3. CO's options after the 3-bet, whole range.
 mcp_call get_node '{"game":"nl","stack":100,"history":"UTG_Fold_HJ_Fold_CO_60%_BTN_77%_SB_Fold_BB_Fold_CO"}'
@@ -17,4 +17,4 @@ mcp_call get_node '{"game":"nl","stack":100,"history":"UTG_Fold_HJ_Fold_CO_60%_B
 mcp_call get_node '{"game":"nl","stack":100,"history":"UTG_Fold_HJ_Fold_CO_60%_BTN_77%_SB_Fold_BB_Fold_CO","hand":"AQo"}'
 
 # 5. CO's 4-bet range (95% pot = 23.2bb).
-mcp_call get_range '{"game":"nl","stack":100,"spot":"UTG_Fold_HJ_Fold_CO_60%_BTN_77%_SB_Fold_BB_Fold_CO_95%"}' --array 28
+mcp_call get_range '{"game":"nl","stack":100,"spot":"UTG_Fold_HJ_Fold_CO_60%_BTN_77%_SB_Fold_BB_Fold_CO_95%","limit":500}' --array 28

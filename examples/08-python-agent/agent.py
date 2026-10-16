@@ -8,9 +8,13 @@ you can see both side by side.
 """
 import json
 import os
+import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "lib"))
+from range_stats import range_stats  # noqa: E402
 
 MCP_URL = os.environ.get("POKERDATA_MCP_URL", "https://pokerdata.io/api/mcp")
 REST = os.environ.get("POKERDATA_REST_URL", "https://pokerdata.io/api/v1")
@@ -60,9 +64,12 @@ def main():
 
     # 6-max NL 100bb: BTN open range, compact rows are [hand, frequency, evSb].
     spot = "UTG_Fold_HJ_Fold_CO_Fold_BTN_60%"
-    rng = call_tool("get_range", {"game": "nl", "stack": 100, "spot": spot})
+    # limit 500 returns every row, so the counts below cover the whole range.
+    rng = call_tool("get_range", {"game": "nl", "stack": 100, "spot": spot, "limit": 500})
+    stats = range_stats(rng["range"])
     best = sorted(rng["range"], key=lambda r: r[2], reverse=True)[:5]
-    print(f"\nBTN open at 100bb: {rng['combos']} combos, {rng['summary']['nonzeroHands']} hand classes")
+    print(f"\nBTN open at 100bb: {stats['combos']} combos, {stats['nonzero_hands']} hand classes"
+          f" = {stats['pure_hands']} pure + {stats['mixed_hands']} mixed")
     print("Highest-EV opens:", ", ".join(f"{h} {ev}sb" for h, _f, ev in best))
 
     # CO facing a BTN 3-bet with AQo.

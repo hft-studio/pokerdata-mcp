@@ -86,7 +86,7 @@ function runBridge(cmd, args, messages, env, { cwd, timeoutMs = 90000 } = {}) {
 async function main() {
   const lib = await import("./lib/pokerdata.mjs");
   const { TOOL_CALLS, PAID_DATA_CALLS, classify } = await import("./lib/tool-calls.mjs");
-  const { API_KEY, MCP_URL, REST_BASE, rpc, callTool, restGet, isKeyGate } = lib;
+  const { API_KEY, MCP_URL, REST_BASE, rpc, callTool, restGet, isKeyGate, rangeStats } = lib;
   const hasKey = Boolean(API_KEY);
   const noKeyMsg = "no POKERDATA_API_KEY set; set a pdk_ key to run this check";
   const startedAt = new Date();
@@ -222,11 +222,12 @@ async function main() {
   // ---------------------------------------------------------------- scenarios
   group = "Scenarios";
   await check("BTN open range, 6-max NL 100bb (get_range, no key)", async () => {
-    const r = await callTool("get_range", { game: "nl", stack: 100, spot: "UTG_Fold_HJ_Fold_CO_Fold_BTN_60%" }, { key: "" });
+    const r = await callTool("get_range", { game: "nl", stack: 100, spot: "UTG_Fold_HJ_Fold_CO_Fold_BTN_60%", limit: 500 }, { key: "" });
     const rows = r.data?.range || [];
+    const st = rangeStats(rows);
     const aa = rows.find((x) => x[0] === "AA");
-    const ok = !r.isError && r.data.combos > 0 && aa?.[1] === 1;
-    return [ok ? "PASS" : "FAIL", `${r.data?.combos} combos, ${rows.length} hand classes, AA ${JSON.stringify(aa)}`];
+    const ok = !r.isError && st.combos > 0 && aa?.[1] === 1;
+    return [ok ? "PASS" : "FAIL", `from the rows: ${st.combos} combos, ${st.nonzeroHands} hand classes = ${st.pureHands} pure + ${st.mixedHands} mixed, AA ${JSON.stringify(aa)}`];
   });
   await check("CO open vs BTN 3-bet, AQo (get_node, no key)", async () => {
     const r = await callTool("get_node", { game: "nl", stack: 100, history: "UTG_Fold_HJ_Fold_CO_60%_BTN_77%_SB_Fold_BB_Fold_CO", hand: "AQo" }, { key: "" });
@@ -234,13 +235,23 @@ async function main() {
     const sum = (r.data?.actions || []).reduce((s, a) => s + a.frequency, 0);
     return [!r.isError && Math.abs(sum - 1) < 0.01 ? "PASS" : "FAIL", `actor ${r.data?.actor}: ${mix}`];
   });
-  await check("get_range summary counts (BTN open range)", async () => {
-    const r = await callTool("get_range", { game: "nl", stack: 100, spot: "UTG_Fold_HJ_Fold_CO_Fold_BTN_60%" }, { key: "" });
-    const s = r.data?.summary || {};
+  await check("get_range server summary vs rows (BTN open range)", async () => {
+    const r = await callTool("get_range", { game: "nl", stack: 100, spot: "UTG_Fold_HJ_Fold_CO_Fold_BTN_60%", limit: 500 }, { key: "" });
+    const srv = r.data?.summary || {};
     const rows = r.data?.range || [];
-    const mixed = rows.filter(([, f]) => f > 0 && f < 1).length;
-    const observed = `summary nonzero ${s.nonzeroHands} = pure ${s.pureHands} + mixed ${s.mixedHands}? rows: ${rows.length} nonzero, ${mixed} with 0 < freq < 1`;
-    return [s.pureHands + s.mixedHands === s.nonzeroHands ? "PASS" : "WARN", s.pureHands + s.mixedHands === s.nonzeroHands ? observed : `${observed} (odd: pure + mixed does not add up to nonzeroHands)`];
+    const st = rangeStats(rows);
+    const nearPure = rows.filter(([, f]) => f >= 0.995 && f < 1).map(([h, f]) => `${h} ${f}`);
+    const nearZero = rows.filter(([, f]) => f > 0 && f <= 0.005).map(([h, f]) => `${h} ${f}`);
+    const predicted = { pure: st.pureHands + nearPure.length, mixed: st.mixedHands - nearPure.length - nearZero.length };
+    const explained = predicted.pure === srv.pureHands && predicted.mixed === srv.mixedHands;
+    const combosMatch = st.combos === r.data?.combos;
+    const observed = `server summary ${srv.nonzeroHands} = ${srv.pureHands} pure + ${srv.mixedHands} mixed; from the rows ${st.nonzeroHands} = ${st.pureHands} pure + ${st.mixedHands} mixed; combos server ${r.data?.combos} vs rows ${st.combos}`;
+    if (!combosMatch || st.nonzeroHands !== srv.nonzeroHands) return ["FAIL", observed];
+    if (srv.pureHands === st.pureHands && srv.mixedHands === st.mixedHands) return ["PASS", observed];
+    const cause = explained
+      ? `server issue: frequency 0.995 counted as pure (${nearPure.join(", ") || "none"}), 0.005 in neither bucket (${nearZero.join(", ") || "none"}); examples compute counts from the rows`
+      : "server issue: buckets do not add up and do not match the 0.995/0.005 pattern";
+    return ["WARN", `${observed} (${cause})`];
   });
   await check("get_range minFreq filter (CO 4-bet range, minFreq 0.5)", async () => {
     const r = await callTool("get_range", { game: "nl", stack: 100, spot: "UTG_Fold_HJ_Fold_CO_60%_BTN_77%_SB_Fold_BB_Fold_CO_95%", minFreq: 0.5 }, { key: "" });

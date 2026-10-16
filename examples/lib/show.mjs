@@ -5,9 +5,11 @@
 //
 // JSON-RPC tool results are unwrapped (result.content[0].text is parsed);
 // other JSON is printed as is; text (llms.txt, ranges.md) keeps its first lines.
-// Trimmed spots say how much was cut.
+// Trimmed spots say how much was cut. A get_range reply is followed by counts
+// computed from all of its rows (rangeStats), since the server's `summary`
+// buckets do not add up.
 
-import { trim } from "./pokerdata.mjs";
+import { rangeStats, trim } from "./pokerdata.mjs";
 
 const args = process.argv.slice(2);
 const opt = (name, dflt) => {
@@ -58,6 +60,19 @@ if (result?.content) {
   }
   if (result.isError) console.log("isError: true");
   console.log(typeof data === "string" ? data : pretty(trim(data, { maxArray, maxKeys })));
+  if (Array.isArray(data?.range) && data.columns?.[1] === "frequency") printRangeStats(data);
 } else {
   console.log(pretty(trim(json, { maxArray, maxKeys })));
+}
+
+function printRangeStats(data) {
+  const s = rangeStats(data.range);
+  const server = data.summary || {};
+  let line = `Computed from all ${data.range.length} rows: ${s.nonzeroHands} nonzero hands = ${s.pureHands} pure + ${s.mixedHands} mixed`;
+  if (s.combos !== null) line += `, ${s.combos} combos`;
+  if (server.omitted > 0) line += ` (incomplete: ${server.omitted} rows omitted, raise "limit")`;
+  console.log(line);
+  if (server.pureHands !== s.pureHands || server.mixedHands !== s.mixedHands) {
+    console.log(`Server summary says ${server.nonzeroHands} = ${server.pureHands} pure + ${server.mixedHands} mixed (server issue: frequency 0.995 counted as pure, 0.005 in neither bucket)`);
+  }
 }

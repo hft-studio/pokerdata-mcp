@@ -10,8 +10,9 @@ mcp_call list_spots '{"game":"nl","stack":100,"contains":"CO_Fold_BTN","depth":1
 # 2. BTN's first decision: every action with combos (whole range).
 mcp_call get_node '{"game":"nl","stack":100,"history":"UTG_Fold_HJ_Fold_CO_Fold_BTN"}'
 
-# 3. The opening range itself. Rows are [hand, frequency, evSb].
-mcp_call get_range '{"game":"nl","stack":100,"spot":"UTG_Fold_HJ_Fold_CO_Fold_BTN_60%"}' --array 8
+# 3. The opening range itself. Rows are [hand, frequency, evSb]; limit 500
+#    returns every row, so the counts printed after it cover the whole range.
+mcp_call get_range '{"game":"nl","stack":100,"spot":"UTG_Fold_HJ_Fold_CO_Fold_BTN_60%","limit":500}' --array 8
 
 # 4. One hand that mixes: A3o.
 mcp_call get_range '{"game":"nl","stack":100,"spot":"UTG_Fold_HJ_Fold_CO_Fold_BTN_60%","hand":"A3o"}'

@@ -13,7 +13,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { API_KEY, MCP_URL, callTool, isKeyGate, rpc, trim } from "../lib/pokerdata.mjs";
+import { API_KEY, MCP_URL, callTool, isKeyGate, rangeStats, rpc, trim } from "../lib/pokerdata.mjs";
 import { TIER_TEXT, TOOL_CALLS, classify } from "../lib/tool-calls.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -65,6 +65,22 @@ function page(call, res, verdict) {
     shown,
     "```",
   ];
+  if (Array.isArray(res.data?.range) && res.data.columns?.[1] === "frequency") {
+    const s = rangeStats(res.data.range);
+    const srv = res.data.summary || {};
+    lines.push(
+      "",
+      "### Counts computed from the rows",
+      "",
+      `Computed with \`rangeStats\` from all ${res.data.range.length} rows: ${s.nonzeroHands} nonzero hands = ${s.pureHands} pure (frequency 1) + ${s.mixedHands} mixed (0 < frequency < 1)${s.combos === null ? "" : `, ${s.combos} combos`}.`,
+    );
+    if (srv.pureHands !== s.pureHands || srv.mixedHands !== s.mixedHands) {
+      lines.push(
+        "",
+        `The server's \`summary\` above says ${srv.nonzeroHands} = ${srv.pureHands} pure + ${srv.mixedHands} mixed, which does not add up. This is a server issue: hands at frequency 0.995 are counted as pure, and hands at 0.005 are counted in \`nonzeroHands\` but in neither bucket. Use counts computed from the rows instead.`,
+      );
+    }
+  }
   if (!hasKey && call.tier !== "free") {
     lines.push(
       "",
