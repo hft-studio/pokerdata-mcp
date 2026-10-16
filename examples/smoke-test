@@ -1,0 +1,398 @@
+#!/usr/bin/env node
+// Smoke test for the live PokerData API: REST, docs, the MCP protocol, every
+// MCP tool, two real preflop scenarios, paid data (with a key) and the stdio
+// bridge (local bin and `npx pokerdata-mcp`). Prints PASS / WARN / FAIL / SKIP
+// per check and exits 1 if anything failed.
+//
+//   node examples/smoke-test
+//   POKERDATA_API_KEY=pdk_... node examples/smoke-test
+//   node examples/smoke-test --markdown examples/SMOKE_RESULTS.md
+//   node examples/smoke-test --no-npx            # skip the npm download check
+//   node examples/smoke-test --include-mutating  # also call the two writing tools
+//
+// WARN means the call worked but the response is odd or matches a known open
+// issue; the note says which.
+//
+// enqueue_solve and upload_hand_history write to the account, so they are
+// skipped unless --include-mutating is passed, with or without a key.
+//
+// Call budget: a keyless run is about 60 requests (27 tool calls, 8 REST, 10
+// MCP protocol, 6 scenario calls, 2 docs, plus the two stdio bridge runs); with
+// a key it is about 70. Keyless access allows 200 calls/day per IP, so three
+// keyless runs a day fit.
+
+"use strict";
+
+const { spawn } = require("node:child_process");
+const { readFileSync, rmSync, writeFileSync } = require("node:fs");
+const path = require("node:path");
+
+const argv = process.argv.slice(2);
+const mdIndex = argv.indexOf("--markdown");
+const mdFile = mdIndex >= 0 ? argv[mdIndex + 1] : null;
+const skipNpx = argv.includes("--no-npx");
+const includeMutating = argv.includes("--include-mutating");
+
+const results = [];
+let group = "";
+let rateLimited = false;
+
+function excerpt(value, n = 180) {
+  const s = typeof value === "string" ? value : JSON.stringify(value);
+  const flat = (s ?? "").replace(/\s+/g, " ").trim();
+  return flat.length > n ? flat.slice(0, n) + "…" : flat;
+}
+
+function record(name, result, observed) {
+  results.push({ group, name, result, observed });
+  console.log(`${result.padEnd(4)}  ${group.padEnd(14)} ${name}  ${observed ? "- " + observed : ""}`);
+}
+
+async function check(name, fn) {
+  try {
+    const [result, observed] = await fn();
+    record(name, result, observed);
+  } catch (err) {
+    record(name, "FAIL", `exception: ${err.message}`);
+  }
+}
+
+function runBridge(cmd, args, messages, env, { cwd, timeoutMs = 90000 } = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(cmd, args, { cwd, env: { ...process.env, ...env }, stdio: ["pipe", "pipe", "pipe"] });
+    const want = new Set(messages.filter((m) => m.id !== undefined).map((m) => m.id));
+    const replies = {};
+    let buf = "";
+    let stderr = "";
+    let done = false;
+    const finish = (fn, arg) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      fn(arg);
+    };
+    const timer = setTimeout(() => {
+      child.kill();
+      finish(reject, new Error(`timeout after ${timeoutMs}ms; stderr: ${excerpt(stderr)}`));
+    }, timeoutMs);
+    child.stdout.on("data", (d) => {
+      buf += d;
+      let i;
+      while ((i = buf.indexOf("\n")) >= 0) {
+        const line = buf.slice(0, i);
+        buf = buf.slice(i + 1);
+        if (!line.trim()) continue;
+        let msg;
+        try {
+          msg = JSON.parse(line);
+        } catch {
+          // A bridge must speak newline-delimited JSON-RPC; anything else is
+          // the bug, so say what came out instead of throwing a parse error.
+          child.kill();
+          finish(reject, new Error(`non-JSON line on stdout: "${excerpt(line, 160)}"; stderr: ${excerpt(stderr)}`));
+          return;
+        }
+        replies[msg.id] = msg;
+        want.delete(msg.id);
+        if (want.size === 0) {
+          child.stdin.end();
+          finish(resolve, replies);
+        }
+      }
+    });
+    child.stderr.on("data", (d) => (stderr += d));
+    child.on("error", (e) => finish(reject, new Error(`${cmd} failed to start: ${e.message}`)));
+    child.on("close", (code, signal) => {
+      // Exited before answering everything: report the exit and its stderr
+      // rather than waiting for the timeout.
+      finish(reject, new Error(`${cmd} exited (code ${code}, signal ${signal}) with ids ${[...want].join(", ")} unanswered; stderr: ${excerpt(stderr)}`));
+    });
+    child.stdin.on("error", (e) => finish(reject, new Error(`${cmd} stdin closed: ${e.message}`)));
+    for (const m of messages) child.stdin.write(JSON.stringify(m) + "\n");
+  });
+}
+
+async function main() {
+  const lib = await import("./lib/pokerdata.mjs");
+  const { TOOL_CALLS, PAID_DATA_CALLS, classify, MUTATING_SKIP_NOTE } = await import("./lib/tool-calls.mjs");
+  const { API_KEY, MCP_URL, REST_BASE, RATE_LIMIT_HINT, rpc, callTool, restGet, isKeyGate, rangeStats } = lib;
+  const hasKey = Boolean(API_KEY);
+  const noKeyMsg = "no POKERDATA_API_KEY set; set a pdk_ key to run this check";
+  const startedAt = new Date();
+
+  // Any 429 is the keyless daily cap; note it inline and once at the end.
+  const rateHint = (status) => {
+    if (status !== 429) return "";
+    rateLimited = true;
+    return ` (${RATE_LIMIT_HINT})`;
+  };
+
+  console.log(`PokerData smoke test, ${startedAt.toISOString()}`);
+  console.log(`MCP ${MCP_URL}  REST ${REST_BASE}  key: ${hasKey ? "set" : "not set"}\n`);
+
+  // ---------------------------------------------------------------- REST
+  group = "REST";
+  await check("GET /ranges/openapi.json", async () => {
+    const r = await restGet("/ranges/openapi.json", { key: "" });
+    const paths = Object.keys(r.body?.paths || {});
+    const servers = (r.body?.servers || []).map((s) => s.url);
+    const observed = `${r.status}, openapi ${r.body?.openapi}, title "${r.body?.info?.title}", servers ${servers.join(", ")}, paths: ${paths.join(", ")}`;
+    if (r.status !== 200 || !paths.length) return ["FAIL", observed];
+    if (!servers.some((u) => u.includes("pokerdata.io"))) return ["WARN", `${observed} (odd: no pokerdata.io server, so generated clients call another host)`];
+    return ["PASS", observed];
+  });
+  await check("GET /ranges/nl/v2 (discovery, no key)", async () => {
+    const r = await restGet("/ranges/nl/v2", { key: "" });
+    return [r.status === 200 ? "PASS" : "FAIL", `${r.status}, stacks ${JSON.stringify(r.body?.stacks)}, positions ${JSON.stringify(r.body?.positions)}`];
+  });
+  const knownRest401 = "known issue: REST returns 401 without a key while the same NL data is free over MCP (fix in progress)";
+  for (const p of [
+    "/ranges/games",
+    "/ranges/nl/config?stack=100",
+    "/ranges/nl/range?stack=100&spot=UTG_60%25",
+    "/ranges/nl/node?stack=100&history=UTG",
+    "/ranges/nl/v2/spots?stack=100",
+  ]) {
+    await check(`GET ${decodeURIComponent(p)} (no key)`, async () => {
+      const r = await restGet(p, { key: "" });
+      if (r.status === 200) return ["PASS", `200, ${excerpt(r.text, 140)}`];
+      if (r.status === 401) return ["WARN", `401 ${excerpt(r.body?.error ?? r.text, 120)} (${knownRest401})`];
+      return ["FAIL", `${r.status}, ${excerpt(r.text)}${rateHint(r.status)}`];
+    });
+  }
+  for (const p of ["/ranges/games", "/ranges/nl/config?stack=100", "/ranges/nl/range?stack=100&spot=UTG_60%25", "/ranges/nl/node?stack=100&history=UTG", "/ranges/plo/config?stack=100"]) {
+    await check(`GET ${decodeURIComponent(p)} (with key)`, async () => {
+      if (!hasKey) return ["SKIP", noKeyMsg];
+      const r = await restGet(p);
+      return [r.status === 200 ? "PASS" : "FAIL", `${r.status}, ${excerpt(r.text, 140)}${rateHint(r.status)}`];
+    });
+  }
+  await check("GET /ranges/nl/config?stack=100 (invalid key)", async () => {
+    const r = await restGet("/ranges/nl/config?stack=100", { key: "pdk_invalid" });
+    return [r.status === 401 ? "PASS" : "FAIL", `${r.status}, ${excerpt(r.text, 140)}`];
+  });
+
+  // ---------------------------------------------------------------- docs
+  group = "Docs";
+  for (const url of ["https://pokerdata.io/llms.txt", "https://pokerdata.io/ranges.md"]) {
+    await check(`GET ${url}`, async () => {
+      const r = await restGet(url, { key: "" });
+      const first = r.text.split("\n").find((l) => l.trim());
+      return [r.status === 200 && r.text.length > 200 ? "PASS" : "FAIL", `${r.status}, ${r.contentType}, ${r.text.length} bytes, first line "${excerpt(first, 80)}"${rateHint(r.status)}`];
+    });
+  }
+
+  // ---------------------------------------------------------------- MCP protocol
+  group = "MCP protocol";
+  await check("initialize", async () => {
+    const r = await rpc("initialize", { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "smoke-test", version: "1" } }, { key: "" });
+    const info = r.body?.result?.serverInfo;
+    return [r.status === 200 && info ? "PASS" : "FAIL", `${r.status}, serverInfo ${JSON.stringify(info)}, protocol ${r.body?.result?.protocolVersion}`];
+  });
+  await check("notifications/initialized", async () => {
+    const r = await rpc("notifications/initialized", undefined, { key: "", notification: true });
+    return [r.status === 202 ? "PASS" : "FAIL", `${r.status}`];
+  });
+  let liveTools = [];
+  await check("tools/list (no key)", async () => {
+    const r = await rpc("tools/list", undefined, { key: "" });
+    liveTools = (r.body?.result?.tools || []).map((t) => t.name).sort();
+    const repo = JSON.parse(readFileSync(path.join(__dirname, "..", "tools.json"), "utf8"));
+    const repoNames = (Array.isArray(repo) ? repo : repo.tools).map((t) => t.name).sort();
+    const examples = TOOL_CALLS.map((c) => c.name).sort();
+    const same = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
+    const ok = r.status === 200 && liveTools.length > 0 && same(liveTools, repoNames) && same(liveTools, examples);
+    return [ok ? "PASS" : "FAIL", `${r.status}, ${liveTools.length} tools; matches tools.json: ${same(liveTools, repoNames)}; every tool has an example: ${same(liveTools, examples)}`];
+  });
+  await check("resources/list", async () => {
+    const r = await rpc("resources/list", undefined, { key: "" });
+    const uris = (r.body?.result?.resources || []).map((x) => x.uri);
+    return [r.status === 200 && uris.length ? "PASS" : "FAIL", `${r.status}, ${uris.join(", ")}`];
+  });
+  await check("GET on the MCP endpoint", async () => {
+    const r = await restGet(MCP_URL, { key: "" });
+    return [r.status === 405 ? "PASS" : "WARN", `${r.status}, ${excerpt(r.text, 140)}`];
+  });
+  await check("malformed JSON body", async () => {
+    const res = await fetch(MCP_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{bad" });
+    const text = await res.text();
+    return [res.status === 400 && text.includes("-32700") ? "PASS" : "FAIL", `${res.status}, ${excerpt(text, 140)}`];
+  });
+  await check("tools/call without an Accept header", async () => {
+    const res = await fetch(MCP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "get_node", arguments: { game: "nl", stack: 100, history: "UTG", hand: "AA" } } }),
+    });
+    const body = await res.json();
+    return [res.status === 200 && !body.result?.isError ? "PASS" : "FAIL", `${res.status}, ${excerpt(body.result?.content?.[0]?.text, 120)}`];
+  });
+  await check("tools/call with an unknown tool name (no key)", async () => {
+    const r = await callTool("no_such_tool", {}, { key: "" });
+    const text = r.rpcError ? JSON.stringify(r.rpcError) : excerpt(r.data, 140);
+    if (isKeyGate(r)) return ["WARN", `${r.status}, odd: unknown tool gets the key-gate message instead of an unknown-tool error: "${excerpt(r.data, 90)}"`];
+    return [r.isError ? "PASS" : "FAIL", `${r.status}, ${text}`];
+  });
+  await check("tools/call with an invalid key on a free tool", async () => {
+    const r = await callTool("list_games", {}, { key: "pdk_invalid" });
+    const msg = r.rpcError?.message || "";
+    if (r.status !== 401) return ["FAIL", `${r.status}, ${excerpt(r.raw)}`];
+    const odd = /required/.test(msg) && !/invalid/i.test(msg);
+    return [odd ? "WARN" : "PASS", `401, code ${r.rpcError?.code}, "${excerpt(msg, 120)}"${odd ? " (odd: says a key is required rather than that the key is invalid; a bad key also loses the free tier)" : ""}`];
+  });
+  await check("tools/call with a missing required argument", async () => {
+    const r = await callTool("get_range", { game: "nl", stack: 100 }, { key: "" });
+    return [r.isError ? "PASS" : "FAIL", `${r.status}, isError ${r.isError}, "${excerpt(r.data, 100)}"`];
+  });
+
+  // ---------------------------------------------------------------- every tool
+  group = "MCP tools";
+  for (const call of TOOL_CALLS) {
+    await check(`${call.name} [${call.tier}]`, async () => {
+      // Mutating tools stay uncalled unless asked for, key or no key.
+      if (call.tier === "mutating" && !includeMutating) return ["SKIP", `${MUTATING_SKIP_NOTE}`];
+      const r = await callTool(call.name, call.args, { key: call.tier === "free" ? "" : API_KEY });
+      const v = classify(call, r, hasKey, isKeyGate);
+      return [v.result, `${v.status}; HTTP ${r.status}; ${excerpt(r.rpcError || r.data, 110)}${rateHint(r.status)}`];
+    });
+  }
+
+  // ---------------------------------------------------------------- scenarios
+  group = "Scenarios";
+  await check("BTN open range, 6-max NL 100bb (get_range, no key)", async () => {
+    const r = await callTool("get_range", { game: "nl", stack: 100, spot: "UTG_Fold_HJ_Fold_CO_Fold_BTN_60%", limit: 500 }, { key: "" });
+    const rows = r.data?.range || [];
+    const st = rangeStats(rows);
+    const aa = rows.find((x) => x[0] === "AA");
+    const ok = !r.isError && st.combos > 0 && aa?.[1] === 1;
+    return [ok ? "PASS" : "FAIL", `from the rows: ${st.combos} combos, ${st.nonzeroHands} hand classes = ${st.pureHands} pure + ${st.mixedHands} mixed, AA ${JSON.stringify(aa)}`];
+  });
+  await check("CO open vs BTN 3-bet, AQo (get_node, no key)", async () => {
+    const r = await callTool("get_node", { game: "nl", stack: 100, history: "UTG_Fold_HJ_Fold_CO_60%_BTN_77%_SB_Fold_BB_Fold_CO", hand: "AQo" }, { key: "" });
+    const mix = (r.data?.actions || []).map((a) => `${a.action} ${a.frequency}`).join(", ");
+    const sum = (r.data?.actions || []).reduce((s, a) => s + a.frequency, 0);
+    return [!r.isError && Math.abs(sum - 1) < 0.01 ? "PASS" : "FAIL", `actor ${r.data?.actor}: ${mix}`];
+  });
+  await check("get_range server summary vs rows (BTN open range)", async () => {
+    const r = await callTool("get_range", { game: "nl", stack: 100, spot: "UTG_Fold_HJ_Fold_CO_Fold_BTN_60%", limit: 500 }, { key: "" });
+    const srv = r.data?.summary || {};
+    const rows = r.data?.range || [];
+    const st = rangeStats(rows);
+    const nearPure = rows.filter(([, f]) => f >= 0.995 && f < 1).map(([h, f]) => `${h} ${f}`);
+    const nearZero = rows.filter(([, f]) => f > 0 && f <= 0.005).map(([h, f]) => `${h} ${f}`);
+    const predicted = { pure: st.pureHands + nearPure.length, mixed: st.mixedHands - nearPure.length - nearZero.length };
+    const explained = predicted.pure === srv.pureHands && predicted.mixed === srv.mixedHands;
+    const combosMatch = st.combos === r.data?.combos;
+    const observed = `server summary ${srv.nonzeroHands} = ${srv.pureHands} pure + ${srv.mixedHands} mixed; from the rows ${st.nonzeroHands} = ${st.pureHands} pure + ${st.mixedHands} mixed; combos server ${r.data?.combos} vs rows ${st.combos}`;
+    if (!combosMatch || st.nonzeroHands !== srv.nonzeroHands) return ["FAIL", observed];
+    if (srv.pureHands === st.pureHands && srv.mixedHands === st.mixedHands) return ["PASS", observed];
+    const cause = explained
+      ? `server issue: frequency 0.995 counted as pure (${nearPure.join(", ") || "none"}), 0.005 in neither bucket (${nearZero.join(", ") || "none"}); examples compute counts from the rows`
+      : "server issue: buckets do not add up and do not match the 0.995/0.005 pattern";
+    return ["WARN", `${observed} (${cause})`];
+  });
+  await check("get_range minFreq filter (CO 4-bet range, minFreq 0.5)", async () => {
+    const r = await callTool("get_range", { game: "nl", stack: 100, spot: "UTG_Fold_HJ_Fold_CO_60%_BTN_77%_SB_Fold_BB_Fold_CO_95%", minFreq: 0.5 }, { key: "" });
+    const rows = r.data?.range || [];
+    const below = rows.filter(([, f]) => f <= 0.5);
+    const observed = `${rows.length} rows returned, ${below.length} at or below 0.5 (lowest ${Math.min(...rows.map((x) => x[1]))})`;
+    if (r.isError) return ["FAIL", `${observed}; tool error: ${excerpt(r.rpcError || r.data, 110)}`];
+    if (!below.length) return ["PASS", observed];
+    // A server-side bug with no client-side workaround: filter the rows
+    // yourself. Tracked as a known issue, so it does not fail the run.
+    return ["WARN", `${observed}: minFreq is ignored (known issue: the server returns every row regardless of minFreq; filter the rows client-side)`];
+  });
+  await check("EV baseline reported in a node after a 3-bet", async () => {
+    const history = "UTG_Fold_HJ_Fold_CO_60%_BTN_77%_SB_Fold_BB_Fold_CO";
+    const compact = await callTool("get_node", { game: "nl", stack: 100, history, hand: "AQo" }, { key: "" });
+    const full = await callTool("get_node", { game: "nl", stack: 100, history, detail: "full" }, { key: "" });
+    const fold = (compact.data?.actions || []).find((a) => a.kind === "fold");
+    const inCompact = "evBaseline" in (compact.data || {});
+    const observed = `compact: fold evSb ${fold?.evSb}, evBaseline ${inCompact ? JSON.stringify(compact.data.evBaseline) : "absent"}; full: evBaseline ${JSON.stringify(full.data?.evBaseline)}`;
+    if (fold?.evSb !== 0 && !inCompact) return ["WARN", `${observed} (odd: the default compact reply drops evBaseline, so a non-zero fold EV is not flagged)`];
+    return ["PASS", observed];
+  });
+
+  // ---------------------------------------------------------------- paid data
+  group = "Paid data";
+  for (const p of PAID_DATA_CALLS) {
+    await check(`${p.label} (${p.name})`, async () => {
+      if (!hasKey) return ["SKIP", noKeyMsg];
+      const r = await callTool(p.name, p.args);
+      return [!r.isError ? "PASS" : "FAIL", `HTTP ${r.status}; ${excerpt(r.data, 140)}`];
+    });
+  }
+
+  // ---------------------------------------------------------------- stdio bridge
+  group = "stdio bridge";
+  const bridgeMsgs = [
+    { jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "smoke-test", version: "1" } } },
+    { jsonrpc: "2.0", method: "notifications/initialized" },
+    { jsonrpc: "2.0", id: 2, method: "tools/list" },
+    { jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "get_node", arguments: { game: "nl", stack: 100, history: "UTG_Fold_HJ_Fold_CO_Fold_BTN", hand: "K9o" } } },
+  ];
+  const judgeBridge = (rep) => {
+    const tools = rep[2]?.result?.tools?.length;
+    const node = JSON.parse(rep[3]?.result?.content?.[0]?.text || "{}");
+    const raise = node.actions?.find((a) => a.kind === "raise");
+    const ok = rep[1]?.result?.serverInfo && tools === liveTools.length && raise;
+    return [ok ? "PASS" : "FAIL", `server ${rep[1]?.result?.serverInfo?.version}, ${tools} tools, BTN K9o raise ${raise?.frequency}`];
+  };
+  await check("local bin/pokerdata-mcp.js (no key)", async () => {
+    const rep = await runBridge(process.execPath, [path.join(__dirname, "..", "bin", "pokerdata-mcp.js")], bridgeMsgs, { POKERDATA_API_KEY: "" });
+    return judgeBridge(rep);
+  });
+  await check("npx -y pokerdata-mcp@latest (published npm package, run outside the repo, no key)", async () => {
+    if (skipNpx) return ["SKIP", "--no-npx given"];
+    // Run outside this repo: inside it npx resolves the local package of the same name.
+    const cwd = require("node:fs").mkdtempSync(path.join(require("node:os").tmpdir(), "pokerdata-npx-"));
+    try {
+      const rep = await runBridge(process.platform === "win32" ? "npx.cmd" : "npx", ["-y", "pokerdata-mcp@latest"], bridgeMsgs, { POKERDATA_API_KEY: "" }, { cwd });
+      return judgeBridge(rep);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  // ---------------------------------------------------------------- summary
+  const count = (k) => results.filter((r) => r.result === k).length;
+  const summary = `${results.length} checks: ${count("PASS")} PASS, ${count("WARN")} WARN, ${count("FAIL")} FAIL, ${count("SKIP")} SKIP`;
+  console.log(`\n${summary}`);
+  if (rateLimited) console.log(`\n${RATE_LIMIT_HINT} Some checks above failed for that reason, not because the API is broken.`);
+
+  if (mdFile) {
+    const cell = (s) => String(s ?? "").replace(/\|/g, "\\|");
+    let npmVersion = "unknown";
+    try {
+      npmVersion = require("node:child_process").execSync("npm view pokerdata-mcp version", { encoding: "utf8" }).trim();
+    } catch {}
+    const lines = [
+      "# Smoke test results",
+      "",
+      `- Date: ${startedAt.toISOString().slice(0, 10)} (run started ${startedAt.toISOString()})`,
+      `- Command: \`node examples/smoke-test --markdown examples/SMOKE_RESULTS.md\``,
+      `- MCP endpoint: ${MCP_URL}`,
+      `- REST base: ${REST_BASE}`,
+      `- \`POKERDATA_API_KEY\`: ${hasKey ? "set" : "not set (paid checks skipped; keyed tools show the observed key gate)"}`,
+      `- Node ${process.version}; npm package pokerdata-mcp@${npmVersion}`,
+      `- Mutating tools (\`enqueue_solve\`, \`upload_hand_history\`): ${includeMutating ? "called with schema-invalid input (`--include-mutating`)" : "skipped (pass `--include-mutating` to call them)"}`,
+      `- Request cost: about 60 requests per keyless run (about 70 with a key). Keyless access allows 200 calls/day per IP.`,
+      "",
+      `**${summary}.** WARN means the call worked but the response is odd or matches a known open issue; the Observed column says which.`,
+      ...(rateLimited ? ["", `**Rate limited during this run.** ${RATE_LIMIT_HINT}`] : []),
+      "",
+      "| # | Group | Check | Result | Observed |",
+      "|---|---|---|---|---|",
+      ...results.map((r, i) => `| ${i + 1} | ${r.group} | ${cell(r.name)} | ${r.result} | ${cell(r.observed)} |`),
+      "",
+    ];
+    writeFileSync(mdFile, lines.join("\n"));
+    console.log(`wrote ${mdFile}`);
+  }
+  if (count("FAIL")) process.exitCode = 1;
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
