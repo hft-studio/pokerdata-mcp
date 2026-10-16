@@ -6,12 +6,12 @@
 //   node examples/07-node-agent/agent.mjs
 //   POKERDATA_API_KEY=pdk_... node examples/07-node-agent/agent.mjs   # adds PLO
 
-const URL = process.env.POKERDATA_MCP_URL || "https://pokerdata.io/api/mcp";
+const SERVER_URL = process.env.POKERDATA_MCP_URL || "https://pokerdata.io/api/mcp";
 const KEY = (process.env.POKERDATA_API_KEY || "").trim();
 
 let nextId = 1;
 async function callTool(name, args) {
-  const res = await fetch(URL, {
+  const res = await fetch(SERVER_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
