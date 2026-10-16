@@ -8,6 +8,7 @@ you can see both side by side.
 """
 import json
 import os
+import socket
 import sys
 import urllib.error
 import urllib.parse
@@ -19,6 +20,9 @@ from range_stats import range_stats  # noqa: E402
 MCP_URL = os.environ.get("POKERDATA_MCP_URL", "https://pokerdata.io/api/mcp")
 REST = os.environ.get("POKERDATA_REST_URL", "https://pokerdata.io/api/v1")
 KEY = os.environ.get("POKERDATA_API_KEY", "").strip()
+TIMEOUT = float(os.environ.get("POKERDATA_TIMEOUT", "30"))
+RATE_LIMIT_HINT = ("Keyless access allows 200 calls/day per IP;"
+                   " set POKERDATA_API_KEY or wait for the daily reset.")
 
 
 def _headers():
@@ -28,32 +32,55 @@ def _headers():
     return h
 
 
+def _read(req):
+    """Return (status, raw bytes) for a request, following an HTTP error body."""
+    try:
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as res:
+            return res.status, res.read()
+    except urllib.error.HTTPError as e:
+        return e.code, e.read()
+    except urllib.error.URLError as e:
+        raise RuntimeError(f"{req.full_url} failed: {e.reason} (timeout is {TIMEOUT}s)")
+    except socket.timeout:
+        raise RuntimeError(f"{req.full_url} timed out after {TIMEOUT}s")
+
+
+def _json(status, raw, what):
+    """Parse a reply body, or raise an error that says what came back instead."""
+    try:
+        return json.loads(raw.decode("utf-8", "replace"))
+    except ValueError:
+        snippet = raw.decode("utf-8", "replace")[:200] or "<empty>"
+        hint = f" {RATE_LIMIT_HINT}" if status == 429 else ""
+        raise RuntimeError(f"{what}: HTTP {status}, reply is not JSON: {snippet}{hint}")
+
+
 def call_tool(name, arguments):
     """Return the tool's parsed JSON; raise RuntimeError on a tool error."""
     body = {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
             "params": {"name": name, "arguments": arguments}}
     req = urllib.request.Request(MCP_URL, json.dumps(body).encode(), _headers())
-    try:
-        with urllib.request.urlopen(req) as res:
-            reply = json.load(res)
-    except urllib.error.HTTPError as e:
-        reply = json.load(e)
+    status, raw = _read(req)
+    reply = _json(status, raw, name)
     if "error" in reply:
-        raise RuntimeError(f"{name}: {reply['error']['message']}")
-    text = reply["result"]["content"][0]["text"]
+        raise RuntimeError(f"{name}: HTTP {status} {reply['error'].get('message')}")
+    content = (reply.get("result") or {}).get("content") or []
+    text = next((c.get("text") for c in content if c.get("type") == "text"), None)
+    if not isinstance(text, str):
+        raise RuntimeError(f"{name}: HTTP {status}, no text content in the reply: {str(reply)[:200]}")
     if reply["result"].get("isError"):
         raise RuntimeError(f"{name}: {text}")
-    return json.loads(text)
+    try:
+        return json.loads(text)
+    except ValueError:
+        raise RuntimeError(f"{name}: tool result is not JSON: {text[:200]}")
 
 
 def rest_get(path):
     """Return (status, parsed body) for a REST GET."""
     req = urllib.request.Request(REST + path, headers=_headers())
-    try:
-        with urllib.request.urlopen(req) as res:
-            return res.status, json.load(res)
-    except urllib.error.HTTPError as e:
-        return e.code, json.load(e)
+    status, raw = _read(req)
+    return status, _json(status, raw, f"GET {path}")
 
 
 def main():

@@ -1,22 +1,24 @@
 # Smoke test results
 
-- Date: 2026-10-16 (run started 2026-10-16T01:58:14.719Z)
+- Date: 2026-10-16 (run started 2026-10-16T02:40:40.735Z)
 - Command: `node examples/smoke-test --markdown examples/SMOKE_RESULTS.md`
 - MCP endpoint: https://pokerdata.io/api/mcp
 - REST base: https://pokerdata.io/api/v1
 - `POKERDATA_API_KEY`: not set (paid checks skipped; keyed tools show the observed key gate)
-- Node v22.14.0; npm package pokerdata-mcp@1.0.1
+- Node v22.23.2; npm package pokerdata-mcp@1.0.1
+- Mutating tools (`enqueue_solve`, `upload_hand_history`): skipped (pass `--include-mutating` to call them)
+- Request cost: about 60 requests per keyless run (about 70 with a key). Keyless access allows 200 calls/day per IP.
 
-**65 checks: 45 PASS, 10 WARN, 1 FAIL, 9 SKIP.** WARN means the call worked but the response is odd or matches a known open issue; the Observed column says which.
+**65 checks: 47 PASS, 7 WARN, 0 FAIL, 11 SKIP.** WARN means the call worked but the response is odd or matches a known open issue; the Observed column says which.
 
 | # | Group | Check | Result | Observed |
 |---|---|---|---|---|
-| 1 | REST | GET /ranges/openapi.json | WARN | 200, openapi 3.1.0, title "Poker Study AI preflop ranges", servers https://www.pokerstudy.ai, paths: /api/v1/ranges/{game}/node, /api/v1/ranges/{game}/range, /api/v1/ranges/{game}/config (odd: no pokerdata.io server, so generated clients call another host) |
+| 1 | REST | GET /ranges/openapi.json | WARN | 200, openapi 3.1.0, title "Poker Study AI preflop ranges", servers https://www.pokerstudy.ai, paths: /api/v1/ranges/{game}/node, /api/v1/ranges/{game}/range, /api/v1/ranges/{game}/config, /api/v1/ranges/nl/range, /api/v1/ranges/nl/node, /api/v1/ranges/nl/v2/range, /api/v1/ranges/nl/v2/node, /api/v1/ranges/games (odd: no pokerdata.io server, so generated clients call another host) |
 | 2 | REST | GET /ranges/nl/v2 (discovery, no key) | PASS | 200, stacks [20,30,40,50,70,100,150,200], positions ["BB","BTN","CO","HJ","SB","UTG"] |
-| 3 | REST | GET /ranges/games (no key) | WARN | 401 This endpoint requires an API key. Get a free trial key (100 requests, no card) or choose a plan at https://pokerdata.io… (known issue: REST returns 401 without a key while the same NL data is free over MCP (fix in progress)) |
-| 4 | REST | GET /ranges/nl/config?stack=100 (no key) | WARN | 401 This endpoint requires an API key. Get a free trial key (100 requests, no card) or choose a plan at https://pokerdata.io… (known issue: REST returns 401 without a key while the same NL data is free over MCP (fix in progress)) |
-| 5 | REST | GET /ranges/nl/range?stack=100&spot=UTG_60% (no key) | WARN | 401 This endpoint requires an API key. Get a free trial key (100 requests, no card) or choose a plan at https://pokerdata.io… (known issue: REST returns 401 without a key while the same NL data is free over MCP (fix in progress)) |
-| 6 | REST | GET /ranges/nl/node?stack=100&history=UTG (no key) | WARN | 401 This endpoint requires an API key. Get a free trial key (100 requests, no card) or choose a plan at https://pokerdata.io… (known issue: REST returns 401 without a key while the same NL data is free over MCP (fix in progress)) |
+| 3 | REST | GET /ranges/games (no key) | PASS | 200, {"games":[{"id":"nl","discovery":"/api/v1/ranges/nl/v2","stacks":[20,30,40,50,70,100,150,200],"positions":["BB","BTN","CO","HJ","SB","UTG"]}… |
+| 4 | REST | GET /ranges/nl/config?stack=100 (no key) | PASS | 200, {"schemaVersion":1,"units":{"stack":"bb","stacks":"bb","blinds":"bb","ante":"bb","sizeBb":"bb","openSizes":"bb","evs":"sb"},"game":"nl","sta… |
+| 5 | REST | GET /ranges/nl/range?stack=100&spot=UTG_60% (no key) | PASS | 200, {"schemaVersion":1,"units":{"stack":"bb","sizeBb":"bb","sizePctPot":"percent_of_pot_after_call","evs":"none","blinds":"bb","ante":"bb"},"gam… |
+| 6 | REST | GET /ranges/nl/node?stack=100&history=UTG (no key) | PASS | 200, {"schemaVersion":1,"units":{"stack":"bb","sizeBb":"bb","sizePctPot":"percent_of_pot_after_call","evs":"none","blinds":"bb","ante":"bb"},"gam… |
 | 7 | REST | GET /ranges/nl/v2/spots?stack=100 (no key) | WARN | 401 This endpoint requires an API key. Get a free trial key (100 requests, no card) or choose a plan at https://pokerdata.io… (known issue: REST returns 401 without a key while the same NL data is free over MCP (fix in progress)) |
 | 8 | REST | GET /ranges/games (with key) | SKIP | no POKERDATA_API_KEY set; set a pdk_ key to run this check |
 | 9 | REST | GET /ranges/nl/config?stack=100 (with key) | SKIP | no POKERDATA_API_KEY set; set a pdk_ key to run this check |
@@ -63,12 +65,12 @@
 | 50 | MCP tools | list_queued_solves [account] | PASS | key gate observed (no key in this run); HTTP 200; This needs an API key. 6-max NL cash preflop (game "nl"), list_games, list_postflop_packs and the tree docs ar… |
 | 51 | MCP tools | get_queued_solve [account] | PASS | key gate observed (no key in this run); HTTP 200; This needs an API key. 6-max NL cash preflop (game "nl"), list_games, list_postflop_packs and the tree docs ar… |
 | 52 | MCP tools | list_library_solutions [account] | PASS | key gate observed (no key in this run); HTTP 200; This needs an API key. 6-max NL cash preflop (game "nl"), list_games, list_postflop_packs and the tree docs ar… |
-| 53 | MCP tools | enqueue_solve [mutating] | PASS | key gate observed (no key in this run); HTTP 200; This needs an API key. 6-max NL cash preflop (game "nl"), list_games, list_postflop_packs and the tree docs ar… |
-| 54 | MCP tools | upload_hand_history [mutating] | PASS | key gate observed (no key in this run); HTTP 200; This needs an API key. 6-max NL cash preflop (game "nl"), list_games, list_postflop_packs and the tree docs ar… |
+| 53 | MCP tools | enqueue_solve [mutating] | SKIP | mutating tools are skipped unless --include-mutating is passed |
+| 54 | MCP tools | upload_hand_history [mutating] | SKIP | mutating tools are skipped unless --include-mutating is passed |
 | 55 | Scenarios | BTN open range, 6-max NL 100bb (get_range, no key) | PASS | from the rows: 550.88 combos, 91 hand classes = 85 pure + 6 mixed, AA ["AA",1,19.2] |
 | 56 | Scenarios | CO open vs BTN 3-bet, AQo (get_node, no key) | PASS | actor CO: Fold 0, Call 0.5, 95% 0.5, AI 0 |
 | 57 | Scenarios | get_range server summary vs rows (BTN open range) | WARN | server summary 91 = 86 pure + 4 mixed; from the rows 91 = 85 pure + 6 mixed; combos server 550.88 vs rows 550.88 (server issue: frequency 0.995 counted as pure (T5s 0.995), 0.005 in neither bucket (Q3s 0.005); examples compute counts from the rows) |
-| 58 | Scenarios | get_range minFreq filter (CO 4-bet range, minFreq 0.5) | FAIL | 28 rows returned, 20 at or below 0.5 (lowest 0.005): minFreq is ignored |
+| 58 | Scenarios | get_range minFreq filter (CO 4-bet range, minFreq 0.5) | WARN | 28 rows returned, 20 at or below 0.5 (lowest 0.005): minFreq is ignored (known issue: the server returns every row regardless of minFreq; filter the rows client-side) |
 | 59 | Scenarios | EV baseline reported in a node after a 3-bet | WARN | compact: fold evSb -5, evBaseline absent; full: evBaseline null (odd: the default compact reply drops evBaseline, so a non-zero fold EV is not flagged) |
 | 60 | Paid data | nlmtt8 30bb UTG first-in node (get_node) | SKIP | no POKERDATA_API_KEY set; set a pdk_ key to run this check |
 | 61 | Paid data | plo 100bb UTG first-in node (get_node) | SKIP | no POKERDATA_API_KEY set; set a pdk_ key to run this check |

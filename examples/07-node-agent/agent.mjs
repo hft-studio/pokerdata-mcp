@@ -10,23 +10,47 @@ import { rangeStats } from "../lib/pokerdata.mjs";
 
 const SERVER_URL = process.env.POKERDATA_MCP_URL || "https://pokerdata.io/api/mcp";
 const KEY = (process.env.POKERDATA_API_KEY || "").trim();
+const TIMEOUT_MS = Number(process.env.POKERDATA_TIMEOUT_MS || 30000);
 
 let nextId = 1;
 async function callTool(name, args) {
-  const res = await fetch(SERVER_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json, text/event-stream",
-      ...(KEY ? { Authorization: `Bearer ${KEY}` } : {}),
-    },
-    body: JSON.stringify({ jsonrpc: "2.0", id: nextId++, method: "tools/call", params: { name, arguments: args } }),
-  });
-  const reply = await res.json();
+  let res;
+  try {
+    res = await fetch(SERVER_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json, text/event-stream",
+        ...(KEY ? { Authorization: `Bearer ${KEY}` } : {}),
+      },
+      body: JSON.stringify({ jsonrpc: "2.0", id: nextId++, method: "tools/call", params: { name, arguments: args } }),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+  } catch (err) {
+    const why = err?.name === "TimeoutError" ? `timed out after ${TIMEOUT_MS}ms` : err?.message || String(err);
+    throw new Error(`${name}: request to ${SERVER_URL} ${why}`);
+  }
+  // Errors, rate limits and proxies can answer with HTML or an empty body, so
+  // never hand the text straight to JSON.parse.
+  const body = await res.text();
+  let reply;
+  try {
+    reply = JSON.parse(body);
+  } catch {
+    const hint = res.status === 429
+      ? " Keyless access allows 200 calls/day per IP; set POKERDATA_API_KEY or wait for the daily reset."
+      : "";
+    throw new Error(`${name}: HTTP ${res.status}, reply is not JSON: ${body.slice(0, 200) || "<empty>"}${hint}`);
+  }
   if (reply.error) throw new Error(`${name}: HTTP ${res.status} ${reply.error.message}`);
-  const text = reply.result.content[0].text;
+  const text = reply.result?.content?.find((c) => c.type === "text")?.text;
+  if (typeof text !== "string") throw new Error(`${name}: HTTP ${res.status}, no text content in the reply: ${body.slice(0, 200)}`);
   if (reply.result.isError) throw new Error(`${name}: ${text}`);
-  return JSON.parse(text);
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`${name}: tool result is not JSON: ${text.slice(0, 200)}`);
+  }
 }
 
 const pct = (x) => `${Math.round(x * 1000) / 10}%`;
@@ -41,8 +65,16 @@ function describe(node) {
 async function ask(question, game, stack, history, hand) {
   console.log(`Q: ${question}`);
   const games = await callTool("list_games", {});
-  if (!games[game]?.stacks.includes(stack)) {
-    console.log(`A: ${game} is not solved at ${stack}bb. Stacks: ${games[game]?.stacks.join(", ")}\n`);
+  const entry = games[game];
+  // A game the catalog does not list at all is a different answer from a game
+  // listed without this stack, so say which it is.
+  if (!entry || !Array.isArray(entry.stacks)) {
+    const known = Object.keys(games).filter((g) => !g.startsWith("_")).join(", ");
+    console.log(`A: there is no game "${game}" in list_games. Games: ${known}\n`);
+    return;
+  }
+  if (!entry.stacks.includes(stack)) {
+    console.log(`A: ${game} is not solved at ${stack}bb. Stacks: ${entry.stacks.join(", ")}\n`);
     return;
   }
   const node = await callTool("get_node", { game, stack, history, hand });

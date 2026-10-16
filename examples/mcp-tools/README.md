@@ -11,16 +11,30 @@ without an example.
 ```sh
 node examples/mcp-tools/capture.mjs                          # free tools return data, keyed tools show the key gate
 POKERDATA_API_KEY=pdk_... node examples/mcp-tools/capture.mjs # keyed tools return data
+node examples/mcp-tools/capture.mjs --include-mutating        # also call the two writing tools
 ```
 
-Two tools write to the account (`enqueue_solve`, `upload_hand_history`). Their
-examples send input that fails the published input schema, so running them
-never queues a solve or uploads a hand history.
+Two tiers are not captured by default:
+
+- **`mutating`** (`enqueue_solve`, `upload_hand_history`) writes to the
+  account, so it is skipped unless you pass `--include-mutating`, with or
+  without a key. Even then the arguments fail the published input schema, so
+  running them never queues a solve or uploads a hand history.
+- **`account`** reads the calling key's own hands, opponents and solve queue.
+  With a key set, `capture.mjs` leaves those pages alone rather than committing
+  someone's account data; they are only captured without a key, where the
+  server returns its key gate.
+
+A skipped tool is listed as `SKIP` in the table below, with the reason. A
+skipped `account` page keeps the keyless capture it already had; a skipped
+`mutating` page shows the request and says the tool was not called. A keyless
+capture costs about 28 calls against the keyless limit of 200 calls/day per
+IP; `HTTP 429` is reported as a rate limit.
 
 ## Coverage
 
 <!-- coverage:start -->
-Captured 2026-10-16T01:58:09Z without a key. Live `tools/list` returned 29 tools; every one has an example below.
+Captured 2026-10-16T02:40:31Z without a key. Live `tools/list` returned 29 tools; every one has a page below. Not called in this run: `enqueue_solve`, `upload_hand_history` (the Live status column says why).
 
 | Tool | Group | Access | Example | Live status |
 |---|---|---|---|---|
@@ -51,6 +65,6 @@ Captured 2026-10-16T01:58:09Z without a key. Live `tools/list` returned 29 tools
 | `list_queued_solves` | Solve queue | account | [./list_queued_solves.md](./list_queued_solves.md) | PASS: key gate observed (no key in this run) |
 | `get_queued_solve` | Solve queue | account | [./get_queued_solve.md](./get_queued_solve.md) | PASS: key gate observed (no key in this run) |
 | `list_library_solutions` | Solve queue | account | [./list_library_solutions.md](./list_library_solutions.md) | PASS: key gate observed (no key in this run) |
-| `enqueue_solve` | Solve queue | mutating | [./enqueue_solve.md](./enqueue_solve.md) | PASS: key gate observed (no key in this run) |
-| `upload_hand_history` | Your hands | mutating | [./upload_hand_history.md](./upload_hand_history.md) | PASS: key gate observed (no key in this run) |
+| `enqueue_solve` | Solve queue | mutating | [./enqueue_solve.md](./enqueue_solve.md) | SKIP: mutating tools are skipped unless --include-mutating is passed |
+| `upload_hand_history` | Your hands | mutating | [./upload_hand_history.md](./upload_hand_history.md) | SKIP: mutating tools are skipped unless --include-mutating is passed |
 <!-- coverage:end -->

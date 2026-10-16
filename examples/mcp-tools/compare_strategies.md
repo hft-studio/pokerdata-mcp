@@ -5,7 +5,7 @@ UTG with A5s at 100bb vs 40bb (preflop comparison).
 - Group: Coaching
 - Access: Needs a pdk_ key
 - Live status: **key gate observed (no key in this run)** (PASS)
-- Captured: 2026-10-16T01:58:09Z, without `POKERDATA_API_KEY`, HTTP 200, `isError: true`
+- Captured: 2026-10-16T02:40:31Z, without `POKERDATA_API_KEY`, HTTP 200, `isError: true`
 
 ## Call
 

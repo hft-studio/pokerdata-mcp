@@ -5,7 +5,8 @@
 #   POKERDATA_API_KEY=pdk_... bash examples/10-rest-api/rest.sh
 set -euo pipefail
 BASE=${POKERDATA_REST_URL:-https://pokerdata.io/api/v1}
-SHOW="node $(dirname "$0")/../lib/show.mjs"
+SHOW=(node "$(dirname "$0")/../lib/show.mjs")
+MAX_TIME=${POKERDATA_MAX_TIME:-30}
 auth=()
 if [ -n "${POKERDATA_API_KEY:-}" ]; then auth=(-H "Authorization: Bearer $POKERDATA_API_KEY"); fi
 
@@ -13,10 +14,19 @@ get() { # get <url> [show.mjs options]
   local url=$1
   shift
   local body status
-  body=$(curl -s "${auth[@]}" -w '\n%{http_code}' "$url")
+  # bash 3.2 (macOS) treats "${auth[@]}" of an empty array as unbound under
+  # `set -u`, hence ${auth[@]+...}.
+  body=$(curl -s --max-time "$MAX_TIME" ${auth[@]+"${auth[@]}"} -w '\n%{http_code}' "$url") || {
+    echo "\$ GET $url  ->  curl failed (timeout is ${MAX_TIME}s; set POKERDATA_MAX_TIME to change it)"
+    echo
+    return 0
+  }
   status=${body##*$'\n'}
   echo "\$ GET $url  ->  HTTP $status"
-  printf '%s' "${body%$'\n'*}" | $SHOW "$@"
+  if [ "$status" = "429" ]; then
+    echo "Rate limited. Keyless access allows 200 calls/day per IP; set POKERDATA_API_KEY or wait for the daily reset."
+  fi
+  printf '%s' "${body%$'\n'*}" | "${SHOW[@]}" "$@"
   echo
 }
 

@@ -5,7 +5,7 @@ Spots at 100bb whose history contains CO, one decision deep.
 - Group: Preflop
 - Access: Free, no key
 - Live status: **live data, no key** (PASS)
-- Captured: 2026-10-16T01:58:09Z, without `POKERDATA_API_KEY`, HTTP 200
+- Captured: 2026-10-16T02:40:31Z, without `POKERDATA_API_KEY`, HTTP 200
 
 ## Call
 

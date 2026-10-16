@@ -15,9 +15,48 @@ POKERDATA_API_KEY=pdk_... node examples/smoke-test
 
 Without a key, the free surface returns data and every keyed tool is still
 called so its real reply (the key gate) is recorded. With a key
-(`pdk_...`, free trial at [pokerdata.io/app/api](https://pokerdata.io/app/api))
-the same scripts return the paid data. Latest run:
-[`SMOKE_RESULTS.md`](SMOKE_RESULTS.md).
+(`pdk_...`, Starter is a free key with 100 calls, at
+[pokerdata.io/app/api](https://pokerdata.io/app/api)) the same scripts return
+the paid data. Latest run: [`SMOKE_RESULTS.md`](SMOKE_RESULTS.md).
+
+## Rate limit and call cost
+
+**Keyless access allows 200 calls per day per IP.** Every example below spends
+from that budget, and running all of them once is about 150 calls (the smoke
+test and a full capture are 90 of those), so a second pass in the same day
+hits the cap. When it does, the API answers `HTTP 429`; every script here
+reports that explicitly instead of failing with a parse error, and the smoke
+test prints the hint once at the end. Wait for the daily reset or set
+`POKERDATA_API_KEY`.
+
+Approximate requests per script:
+
+| Script | Calls | Notes |
+|---|---|---|
+| [`curl.sh`](curl.sh) | 2 | `tools/list`, one `get_node` |
+| [`rest.sh`](rest.sh) | 2 | REST discovery plus one keyed range |
+| [`python_mcp.py`](python_mcp.py) | 2 | two `get_range` calls |
+| [`01-browse-catalog/catalog.sh`](01-browse-catalog) | 5 | all free |
+| [`02-btn-open-range/btn-open.sh`](02-btn-open-range) | 4 | all free |
+| [`03-co-vs-btn-3bet/co-vs-3bet.sh`](03-co-vs-btn-3bet) | 5 | all free |
+| [`04-plo-and-paid-games/paid.sh`](04-plo-and-paid-games) | 7 | 2 free, 5 need a key |
+| [`05-npx-stdio-bridge/bridge.sh`](05-npx-stdio-bridge) | 4 | plus one npm download |
+| [`06-streamable-http-jsonrpc/session.sh`](06-streamable-http-jsonrpc) | 9 | includes the deliberate error replies |
+| [`07-node-agent/agent.mjs`](07-node-agent) | 8 | `list_games` once per question |
+| [`08-python-agent/agent.py`](08-python-agent) | 5 | 4 MCP, 1 REST |
+| [`09-client-configs`](09-client-configs) | 0 | config only |
+| [`10-rest-api/rest.sh`](10-rest-api) | 9 | 7 REST, 2 docs |
+| [`mcp-tools/capture.mjs`](mcp-tools/capture.mjs) | ~28 | 27 tools plus `tools/list` |
+| [`smoke-test`](smoke-test) | ~60 | ~70 with a key |
+
+Two tools write to the account (`enqueue_solve`, `upload_hand_history`). Both
+the smoke test and `capture.mjs` skip them unless you pass
+`--include-mutating`, with or without a key; even then the example arguments
+fail the published input schema on purpose, so nothing is queued or uploaded.
+
+Requests time out after 30 seconds (`POKERDATA_TIMEOUT_MS` for the Node
+helpers, `POKERDATA_TIMEOUT` for Python, `POKERDATA_MAX_TIME` for the shell
+scripts).
 
 ## Scenarios
 
@@ -51,13 +90,19 @@ minimal snippets linked from the main README.
 
 Every tool from the live `tools/list` (which matches [`../tools.json`](../tools.json))
 has a page with a real call and the real reply. Access levels: `free` needs no
-key; `key` needs a `pdk_` key; `account` needs any key, free trial included,
-and reads that key's own hands, opponents or solve queue; `mutating` would
-write to the account, so its example sends schema-invalid input on purpose
-and never queues a solve or uploads a hand history.
+key; `key` needs a `pdk_` key; `account` needs any key, Starter included, and
+reads that key's own hands, opponents or solve queue; `mutating` would write to
+the account, so it is skipped unless `--include-mutating` is passed and its
+example sends schema-invalid input on purpose.
+
+`capture.mjs` never writes an `account` page from a keyed run: that reply is
+the key owner's own hands, opponents and solve queue, so those pages are only
+captured without a key, where the server returns its key gate (a keyed run
+leaves them untouched). A `mutating` page shows the request and says the tool
+was not called. Both are marked `SKIP` below.
 
 <!-- coverage:start -->
-Captured 2026-10-16T01:58:09Z without a key. Live `tools/list` returned 29 tools; every one has an example below.
+Captured 2026-10-16T02:40:31Z without a key. Live `tools/list` returned 29 tools; every one has a page below. Not called in this run: `enqueue_solve`, `upload_hand_history` (the Live status column says why).
 
 | Tool | Group | Access | Example | Live status |
 |---|---|---|---|---|
@@ -88,6 +133,6 @@ Captured 2026-10-16T01:58:09Z without a key. Live `tools/list` returned 29 tools
 | `list_queued_solves` | Solve queue | account | [mcp-tools/list_queued_solves.md](mcp-tools/list_queued_solves.md) | PASS: key gate observed (no key in this run) |
 | `get_queued_solve` | Solve queue | account | [mcp-tools/get_queued_solve.md](mcp-tools/get_queued_solve.md) | PASS: key gate observed (no key in this run) |
 | `list_library_solutions` | Solve queue | account | [mcp-tools/list_library_solutions.md](mcp-tools/list_library_solutions.md) | PASS: key gate observed (no key in this run) |
-| `enqueue_solve` | Solve queue | mutating | [mcp-tools/enqueue_solve.md](mcp-tools/enqueue_solve.md) | PASS: key gate observed (no key in this run) |
-| `upload_hand_history` | Your hands | mutating | [mcp-tools/upload_hand_history.md](mcp-tools/upload_hand_history.md) | PASS: key gate observed (no key in this run) |
+| `enqueue_solve` | Solve queue | mutating | [mcp-tools/enqueue_solve.md](mcp-tools/enqueue_solve.md) | SKIP: mutating tools are skipped unless --include-mutating is passed |
+| `upload_hand_history` | Your hands | mutating | [mcp-tools/upload_hand_history.md](mcp-tools/upload_hand_history.md) | SKIP: mutating tools are skipped unless --include-mutating is passed |
 <!-- coverage:end -->

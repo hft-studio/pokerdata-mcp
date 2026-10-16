@@ -1,8 +1,8 @@
 # PLO, PLO 9-max, MTT and postflop
 
 Every game other than 6-max NL cash, and all postflop, needs a `pdk_` key
-(a free trial key gives 100 calls). Coverage and docs tools stay free, so an
-agent can still see what PLO covers without one.
+(Starter is a free key with 100 calls). Coverage and docs tools stay free, so
+an agent can still see what PLO covers without one.
 
 Run it with a key to get data:
 

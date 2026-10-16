@@ -3,9 +3,9 @@
 Hosted hand-history upload page URL for this key.
 
 - Group: Your hands
-- Access: Needs any key (free trial included); reads that key's account
+- Access: Needs any key (Starter included); reads that key's account
 - Live status: **key gate observed (no key in this run)** (PASS)
-- Captured: 2026-10-16T01:58:09Z, without `POKERDATA_API_KEY`, HTTP 200, `isError: true`
+- Captured: 2026-10-16T02:40:31Z, without `POKERDATA_API_KEY`, HTTP 200, `isError: true`
 
 ## Call
 
@@ -47,3 +47,6 @@ Full JSON-RPC reply (not trimmed):
 
 No key was available when this page was captured, so the reply above is the server's real key gate, not data.
 Run `POKERDATA_API_KEY=pdk_... node examples/mcp-tools/capture.mjs` to regenerate this page with the keyed response.
+
+This tool reads the calling key's own account. `capture.mjs` only captures this page without a key,
+so the reply above is never someone's real hands, opponents or solve queue.

@@ -6,19 +6,42 @@ export const MCP_URL = process.env.POKERDATA_MCP_URL || "https://pokerdata.io/ap
 export const REST_BASE = process.env.POKERDATA_REST_URL || "https://pokerdata.io/api/v1";
 export const API_KEY = (process.env.POKERDATA_API_KEY || "").trim();
 
+// Every request gets a timeout so a hung connection fails with a message
+// instead of blocking forever. Override with POKERDATA_TIMEOUT_MS.
+export const TIMEOUT_MS = Number(process.env.POKERDATA_TIMEOUT_MS || 30000);
+
 // The server's reply to any keyed tool called without a key starts with this.
 export const KEY_GATE_PREFIX = "This needs an API key.";
+
+// Keyless calls are limited to 200 per day per IP. Printed whenever a reply
+// comes back 429 so the cause is obvious.
+export const KEYLESS_DAILY_LIMIT = 200;
+export const RATE_LIMIT_HINT =
+  `HTTP 429: rate limited. Keyless access allows ${KEYLESS_DAILY_LIMIT} calls per day per IP; ` +
+  "set POKERDATA_API_KEY or wait for the daily reset.";
 
 function authHeaders(key) {
   return key ? { Authorization: `Bearer ${key}` } : {};
 }
 
+// fetch with a timeout, turning an abort into a readable error.
+async function fetchWithTimeout(url, init = {}, timeoutMs = TIMEOUT_MS) {
+  try {
+    return await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+  } catch (err) {
+    if (err?.name === "TimeoutError" || err?.name === "AbortError") {
+      throw new Error(`${init.method || "GET"} ${url} timed out after ${timeoutMs}ms`);
+    }
+    throw new Error(`${init.method || "GET"} ${url} failed: ${err?.message || err}`);
+  }
+}
+
 // POST one JSON-RPC message. Returns { status, body, text } where body is the
 // parsed JSON-RPC reply (or null for 202 / non-JSON).
-export async function rpc(method, params, { key = API_KEY, id = 1, notification = false } = {}) {
+export async function rpc(method, params, { key = API_KEY, id = 1, notification = false, timeoutMs = TIMEOUT_MS } = {}) {
   const msg = notification ? { jsonrpc: "2.0", method } : { jsonrpc: "2.0", id, method };
   if (params !== undefined) msg.params = params;
-  const res = await fetch(MCP_URL, {
+  const res = await fetchWithTimeout(MCP_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -26,7 +49,7 @@ export async function rpc(method, params, { key = API_KEY, id = 1, notification 
       ...authHeaders(key),
     },
     body: JSON.stringify(msg),
-  });
+  }, timeoutMs);
   const text = await res.text();
   let body = null;
   try {
@@ -37,16 +60,22 @@ export async function rpc(method, params, { key = API_KEY, id = 1, notification 
 
 // Call one MCP tool. Returns { status, isError, data, raw, rpcError }.
 // `data` is the tool's text content parsed as JSON when possible, else the string.
+// Any non-200 status counts as an error even if the body has no error field, so
+// a caller that only checks `isError` cannot read a failed call as a success.
 export async function callTool(name, args = {}, opts = {}) {
   const r = await rpc("tools/call", { name, arguments: args }, opts);
-  const out = { status: r.status, isError: false, data: null, raw: r.body ?? r.text, rpcError: null };
+  const out = { status: r.status, isError: r.status !== 200, data: null, raw: r.body ?? r.text, rpcError: null };
   if (r.body?.error) {
     out.isError = true;
     out.rpcError = r.body.error;
     return out;
   }
   const result = r.body?.result;
-  out.isError = Boolean(result?.isError);
+  out.isError = Boolean(result?.isError) || r.status !== 200;
+  if (!r.body) {
+    out.data = r.status === 429 ? RATE_LIMIT_HINT : `non-JSON reply (HTTP ${r.status}): ${r.text.slice(0, 200)}`;
+    return out;
+  }
   const text = result?.content?.find((c) => c.type === "text")?.text ?? "";
   try {
     out.data = JSON.parse(text);
@@ -61,9 +90,9 @@ export function isKeyGate(res) {
 }
 
 // GET a REST path (relative to REST_BASE) or an absolute URL.
-export async function restGet(pathOrUrl, { key = API_KEY } = {}) {
+export async function restGet(pathOrUrl, { key = API_KEY, timeoutMs = TIMEOUT_MS } = {}) {
   const url = pathOrUrl.startsWith("http") ? pathOrUrl : REST_BASE + pathOrUrl;
-  const res = await fetch(url, { headers: authHeaders(key) });
+  const res = await fetchWithTimeout(url, { headers: authHeaders(key) }, timeoutMs);
   const text = await res.text();
   let body = null;
   try {

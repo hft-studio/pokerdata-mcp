@@ -5,7 +5,7 @@ Exact action mix and EV for AsKh at the flop root on 3h 3d 2s.
 - Group: Coaching
 - Access: Needs a pdk_ key
 - Live status: **key gate observed (no key in this run)** (PASS)
-- Captured: 2026-10-16T01:58:09Z, without `POKERDATA_API_KEY`, HTTP 200, `isError: true`
+- Captured: 2026-10-16T02:40:31Z, without `POKERDATA_API_KEY`, HTTP 200, `isError: true`
 
 ## Call
 

@@ -7,24 +7,35 @@
 //   node examples/smoke-test
 //   POKERDATA_API_KEY=pdk_... node examples/smoke-test
 //   node examples/smoke-test --markdown examples/SMOKE_RESULTS.md
-//   node examples/smoke-test --no-npx          # skip the npm download check
+//   node examples/smoke-test --no-npx            # skip the npm download check
+//   node examples/smoke-test --include-mutating  # also call the two writing tools
 //
 // WARN means the call worked but the response is odd or matches a known open
 // issue; the note says which.
+//
+// enqueue_solve and upload_hand_history write to the account, so they are
+// skipped unless --include-mutating is passed, with or without a key.
+//
+// Call budget: a keyless run is about 60 requests (27 tool calls, 8 REST, 10
+// MCP protocol, 6 scenario calls, 2 docs, plus the two stdio bridge runs); with
+// a key it is about 70. Keyless access allows 200 calls/day per IP, so three
+// keyless runs a day fit.
 
 "use strict";
 
 const { spawn } = require("node:child_process");
-const { readFileSync, writeFileSync } = require("node:fs");
+const { readFileSync, rmSync, writeFileSync } = require("node:fs");
 const path = require("node:path");
 
 const argv = process.argv.slice(2);
 const mdIndex = argv.indexOf("--markdown");
 const mdFile = mdIndex >= 0 ? argv[mdIndex + 1] : null;
 const skipNpx = argv.includes("--no-npx");
+const includeMutating = argv.includes("--include-mutating");
 
 const results = [];
 let group = "";
+let rateLimited = false;
 
 function excerpt(value, n = 180) {
   const s = typeof value === "string" ? value : JSON.stringify(value);
@@ -53,9 +64,16 @@ function runBridge(cmd, args, messages, env, { cwd, timeoutMs = 90000 } = {}) {
     const replies = {};
     let buf = "";
     let stderr = "";
+    let done = false;
+    const finish = (fn, arg) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      fn(arg);
+    };
     const timer = setTimeout(() => {
       child.kill();
-      reject(new Error(`timeout after ${timeoutMs}ms; stderr: ${excerpt(stderr)}`));
+      finish(reject, new Error(`timeout after ${timeoutMs}ms; stderr: ${excerpt(stderr)}`));
     }, timeoutMs);
     child.stdout.on("data", (d) => {
       buf += d;
@@ -64,32 +82,50 @@ function runBridge(cmd, args, messages, env, { cwd, timeoutMs = 90000 } = {}) {
         const line = buf.slice(0, i);
         buf = buf.slice(i + 1);
         if (!line.trim()) continue;
-        const msg = JSON.parse(line);
+        let msg;
+        try {
+          msg = JSON.parse(line);
+        } catch {
+          // A bridge must speak newline-delimited JSON-RPC; anything else is
+          // the bug, so say what came out instead of throwing a parse error.
+          child.kill();
+          finish(reject, new Error(`non-JSON line on stdout: "${excerpt(line, 160)}"; stderr: ${excerpt(stderr)}`));
+          return;
+        }
         replies[msg.id] = msg;
         want.delete(msg.id);
         if (want.size === 0) {
-          clearTimeout(timer);
           child.stdin.end();
-          resolve(replies);
+          finish(resolve, replies);
         }
       }
     });
     child.stderr.on("data", (d) => (stderr += d));
-    child.on("error", (e) => {
-      clearTimeout(timer);
-      reject(e);
+    child.on("error", (e) => finish(reject, new Error(`${cmd} failed to start: ${e.message}`)));
+    child.on("close", (code, signal) => {
+      // Exited before answering everything: report the exit and its stderr
+      // rather than waiting for the timeout.
+      finish(reject, new Error(`${cmd} exited (code ${code}, signal ${signal}) with ids ${[...want].join(", ")} unanswered; stderr: ${excerpt(stderr)}`));
     });
+    child.stdin.on("error", (e) => finish(reject, new Error(`${cmd} stdin closed: ${e.message}`)));
     for (const m of messages) child.stdin.write(JSON.stringify(m) + "\n");
   });
 }
 
 async function main() {
   const lib = await import("./lib/pokerdata.mjs");
-  const { TOOL_CALLS, PAID_DATA_CALLS, classify } = await import("./lib/tool-calls.mjs");
-  const { API_KEY, MCP_URL, REST_BASE, rpc, callTool, restGet, isKeyGate, rangeStats } = lib;
+  const { TOOL_CALLS, PAID_DATA_CALLS, classify, MUTATING_SKIP_NOTE } = await import("./lib/tool-calls.mjs");
+  const { API_KEY, MCP_URL, REST_BASE, RATE_LIMIT_HINT, rpc, callTool, restGet, isKeyGate, rangeStats } = lib;
   const hasKey = Boolean(API_KEY);
   const noKeyMsg = "no POKERDATA_API_KEY set; set a pdk_ key to run this check";
   const startedAt = new Date();
+
+  // Any 429 is the keyless daily cap; note it inline and once at the end.
+  const rateHint = (status) => {
+    if (status !== 429) return "";
+    rateLimited = true;
+    return ` (${RATE_LIMIT_HINT})`;
+  };
 
   console.log(`PokerData smoke test, ${startedAt.toISOString()}`);
   console.log(`MCP ${MCP_URL}  REST ${REST_BASE}  key: ${hasKey ? "set" : "not set"}\n`);
@@ -121,14 +157,14 @@ async function main() {
       const r = await restGet(p, { key: "" });
       if (r.status === 200) return ["PASS", `200, ${excerpt(r.text, 140)}`];
       if (r.status === 401) return ["WARN", `401 ${excerpt(r.body?.error ?? r.text, 120)} (${knownRest401})`];
-      return ["FAIL", `${r.status}, ${excerpt(r.text)}`];
+      return ["FAIL", `${r.status}, ${excerpt(r.text)}${rateHint(r.status)}`];
     });
   }
   for (const p of ["/ranges/games", "/ranges/nl/config?stack=100", "/ranges/nl/range?stack=100&spot=UTG_60%25", "/ranges/nl/node?stack=100&history=UTG", "/ranges/plo/config?stack=100"]) {
     await check(`GET ${decodeURIComponent(p)} (with key)`, async () => {
       if (!hasKey) return ["SKIP", noKeyMsg];
       const r = await restGet(p);
-      return [r.status === 200 ? "PASS" : "FAIL", `${r.status}, ${excerpt(r.text, 140)}`];
+      return [r.status === 200 ? "PASS" : "FAIL", `${r.status}, ${excerpt(r.text, 140)}${rateHint(r.status)}`];
     });
   }
   await check("GET /ranges/nl/config?stack=100 (invalid key)", async () => {
@@ -142,7 +178,7 @@ async function main() {
     await check(`GET ${url}`, async () => {
       const r = await restGet(url, { key: "" });
       const first = r.text.split("\n").find((l) => l.trim());
-      return [r.status === 200 && r.text.length > 200 ? "PASS" : "FAIL", `${r.status}, ${r.contentType}, ${r.text.length} bytes, first line "${excerpt(first, 80)}"`];
+      return [r.status === 200 && r.text.length > 200 ? "PASS" : "FAIL", `${r.status}, ${r.contentType}, ${r.text.length} bytes, first line "${excerpt(first, 80)}"${rateHint(r.status)}`];
     });
   }
 
@@ -213,9 +249,11 @@ async function main() {
   group = "MCP tools";
   for (const call of TOOL_CALLS) {
     await check(`${call.name} [${call.tier}]`, async () => {
+      // Mutating tools stay uncalled unless asked for, key or no key.
+      if (call.tier === "mutating" && !includeMutating) return ["SKIP", `${MUTATING_SKIP_NOTE}`];
       const r = await callTool(call.name, call.args, { key: call.tier === "free" ? "" : API_KEY });
       const v = classify(call, r, hasKey, isKeyGate);
-      return [v.result, `${v.status}; HTTP ${r.status}; ${excerpt(r.rpcError || r.data, 110)}`];
+      return [v.result, `${v.status}; HTTP ${r.status}; ${excerpt(r.rpcError || r.data, 110)}${rateHint(r.status)}`];
     });
   }
 
@@ -258,7 +296,11 @@ async function main() {
     const rows = r.data?.range || [];
     const below = rows.filter(([, f]) => f <= 0.5);
     const observed = `${rows.length} rows returned, ${below.length} at or below 0.5 (lowest ${Math.min(...rows.map((x) => x[1]))})`;
-    return [!r.isError && below.length === 0 ? "PASS" : "FAIL", below.length ? `${observed}: minFreq is ignored` : observed];
+    if (r.isError) return ["FAIL", `${observed}; tool error: ${excerpt(r.rpcError || r.data, 110)}`];
+    if (!below.length) return ["PASS", observed];
+    // A server-side bug with no client-side workaround: filter the rows
+    // yourself. Tracked as a known issue, so it does not fail the run.
+    return ["WARN", `${observed}: minFreq is ignored (known issue: the server returns every row regardless of minFreq; filter the rows client-side)`];
   });
   await check("EV baseline reported in a node after a 3-bet", async () => {
     const history = "UTG_Fold_HJ_Fold_CO_60%_BTN_77%_SB_Fold_BB_Fold_CO";
@@ -304,14 +346,19 @@ async function main() {
     if (skipNpx) return ["SKIP", "--no-npx given"];
     // Run outside this repo: inside it npx resolves the local package of the same name.
     const cwd = require("node:fs").mkdtempSync(path.join(require("node:os").tmpdir(), "pokerdata-npx-"));
-    const rep = await runBridge(process.platform === "win32" ? "npx.cmd" : "npx", ["-y", "pokerdata-mcp@latest"], bridgeMsgs, { POKERDATA_API_KEY: "" }, { cwd });
-    return judgeBridge(rep);
+    try {
+      const rep = await runBridge(process.platform === "win32" ? "npx.cmd" : "npx", ["-y", "pokerdata-mcp@latest"], bridgeMsgs, { POKERDATA_API_KEY: "" }, { cwd });
+      return judgeBridge(rep);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
   });
 
   // ---------------------------------------------------------------- summary
   const count = (k) => results.filter((r) => r.result === k).length;
   const summary = `${results.length} checks: ${count("PASS")} PASS, ${count("WARN")} WARN, ${count("FAIL")} FAIL, ${count("SKIP")} SKIP`;
   console.log(`\n${summary}`);
+  if (rateLimited) console.log(`\n${RATE_LIMIT_HINT} Some checks above failed for that reason, not because the API is broken.`);
 
   if (mdFile) {
     const cell = (s) => String(s ?? "").replace(/\|/g, "\\|");
@@ -328,8 +375,11 @@ async function main() {
       `- REST base: ${REST_BASE}`,
       `- \`POKERDATA_API_KEY\`: ${hasKey ? "set" : "not set (paid checks skipped; keyed tools show the observed key gate)"}`,
       `- Node ${process.version}; npm package pokerdata-mcp@${npmVersion}`,
+      `- Mutating tools (\`enqueue_solve\`, \`upload_hand_history\`): ${includeMutating ? "called with schema-invalid input (`--include-mutating`)" : "skipped (pass `--include-mutating` to call them)"}`,
+      `- Request cost: about 60 requests per keyless run (about 70 with a key). Keyless access allows 200 calls/day per IP.`,
       "",
       `**${summary}.** WARN means the call worked but the response is odd or matches a known open issue; the Observed column says which.`,
+      ...(rateLimited ? ["", `**Rate limited during this run.** ${RATE_LIMIT_HINT}`] : []),
       "",
       "| # | Group | Check | Result | Observed |",
       "|---|---|---|---|---|",

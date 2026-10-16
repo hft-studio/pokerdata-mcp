@@ -5,9 +5,9 @@
 // tier:
 //   free      works without a key (6-max NL cash preflop, coverage and docs tools)
 //   key       needs a pdk_ key (paid games, postflop, coaching)
-//   account   needs any key, free trial included; reads that key's own account
-//   mutating  would write to the account; called only with schema-invalid
-//             input so nothing is recorded or uploaded
+//   account   needs any key, Starter included; reads that key's own account
+//   mutating  would write to the account; skipped unless --include-mutating is
+//             passed, and even then called only with schema-invalid input
 
 const NIL_UUID = "00000000-0000-0000-0000-000000000000";
 const PACK = "nlhe-srp-co-vs-bb-100bb";
@@ -109,7 +109,7 @@ export const TOOL_CALLS = [
     what: "Solutions in this key's library.",
     args: { limit: 5 } },
 
-  // Mutating: schema-invalid input only
+  // Mutating: skipped by default, and schema-invalid input even when included
   { name: "enqueue_solve", tier: "mutating", group: "Solve queue",
     what: "Dry call: an empty title and pot 0 both fail the input schema (minLength 1, exclusiveMinimum 0), so the request is meant to be rejected before anything is recorded.",
     args: { title: "", board: "Ks 7d 2c", pot: 0, effective_stack: 97.5 } },
@@ -121,14 +121,27 @@ export const TOOL_CALLS = [
 export const TIER_TEXT = {
   free: "Free, no key",
   key: "Needs a pdk_ key",
-  account: "Needs any key (free trial included); reads that key's account",
-  mutating: "Writes to the account; called here with schema-invalid input only",
+  account: "Needs any key (Starter included); reads that key's account",
+  mutating: "Writes to the account; skipped unless `--include-mutating` is passed",
 };
+
+// The two mutating tools are never called unless the caller opts in with this
+// flag, with or without a key: an account-writing tool should not run just
+// because a key happens to be in the environment.
+export const INCLUDE_MUTATING_FLAG = "--include-mutating";
+export const MUTATING_SKIP_NOTE =
+  `mutating tools are skipped unless ${INCLUDE_MUTATING_FLAG} is passed`;
+
+// Account-tier replies contain that key's own hands, opponents and solve
+// queue, so capture.mjs refuses to write those pages from a keyed run.
+export const ACCOUNT_SKIP_NOTE =
+  "a key is set, so the reply would be this key's own account data";
 
 // Judge one tool response against what its tier should return.
 // Returns { result: "PASS" | "WARN" | "FAIL", status: short live-status label }.
 export function classify(call, res, hasKey, isKeyGate) {
   const gated = isKeyGate(res);
+  if (res.status === 429) return { result: "FAIL", status: "HTTP 429 rate limited (keyless: 200 calls/day per IP)" };
   if (res.status !== 200) return { result: "FAIL", status: `HTTP ${res.status}` };
   if (call.tier === "free") {
     if (!res.isError) return { result: "PASS", status: "live data, no key" };
