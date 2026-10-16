@@ -103,6 +103,9 @@ Preflop spots are action paths such as `UTG_60%_HJ_Call` (NLHE) or
 default; pass `detail: "full"` for complete maps. Full contract:
 [docs.pokerdata.io/ranges](https://docs.pokerdata.io/ranges).
 
+Every tool's full definition (name, description and input schema), exactly
+as the server returns it from `tools/list`, is in [`tools.json`](tools.json).
+
 ## Plans
 
 | Plan | Price | What you get |

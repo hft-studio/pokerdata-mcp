@@ -1,0 +1,1834 @@
+{
+  "source": "https://pokerdata.io/api/mcp (tools/list)",
+  "tools": [
+    {
+      "name": "list_games",
+      "description": "Discover covered stack depths and positions. Call this before low-level preflop queries. \"nl\" = no-limit hold'em 6-max cash (169-grid hands, per-hand EV in small blinds), \"nl9\" = no-limit hold'em 9-max cash, \"nlmtt8\" = no-limit hold'em 8-max MTT chip-EV (10–300bb, 1bb BB-ante; Fold/Call/Limp/AI/Open/3B tokens), \"nlh8-hydra\" = no-limit hold'em 8-max MTT chip-EV with a classic 0.1bb ante from every seat (10, 20, 30, 60bb; same tokens as nlmtt8), \"plo\" = pot-limit Omaha 6-max cash (4-card), \"plo5\" = pot-limit Omaha 5-card 6-max (100bb, 1.2bb ante), \"plo9\" = pot-limit Omaha 9-max cash, \"plo6hu\" = 6-card Omaha heads-up (BTN vs BB, 100bb). Cash trees are not tournament, ICM, PKO, or satellite solves. nlmtt8 is chip-EV only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "string",
+            "enum": [
+              "compact",
+              "full"
+            ],
+            "description": "Response detail. \"compact\" is the default and removes bulk maps; use \"full\" only when exact complete data is required."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_range",
+      "description": "The GTO range for one spot. `spot` is an action path of POSITION_ACTION pairs ending in the action whose range you want, e.g. NLHE cash \"UTG_60%_HJ_Call\", nlmtt8 \"UTG_Open\", or PLO \"UTG_Open_HJ_3B\". Add `hand` for one exact frequency and EV. Compact mode is default; PLO returns representative pure/mixed hands unless a hand is specified; plo5 returns the top hands by EV that take the action (limit up to 500 compact, 2000 full).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "game": {
+            "type": "string",
+            "enum": [
+              "nl",
+              "nl9",
+              "nlmtt8",
+              "nlh8-hydra",
+              "plo",
+              "plo5",
+              "plo9",
+              "plo6hu"
+            ],
+            "description": "\"nl\" = no-limit hold'em 6-max cash (169-grid hands, per-hand EV in small blinds), \"nl9\" = no-limit hold'em 9-max cash, \"nlmtt8\" = no-limit hold'em 8-max MTT chip-EV (10–300bb, 1bb BB-ante; Fold/Call/Limp/AI/Open/3B tokens), \"nlh8-hydra\" = no-limit hold'em 8-max MTT chip-EV with a classic 0.1bb ante from every seat (10, 20, 30, 60bb; same tokens as nlmtt8), \"plo\" = pot-limit Omaha 6-max cash (4-card), \"plo5\" = pot-limit Omaha 5-card 6-max (100bb, 1.2bb ante), \"plo9\" = pot-limit Omaha 9-max cash, \"plo6hu\" = 6-card Omaha heads-up (BTN vs BB, 100bb). Cash trees are not tournament, ICM, PKO, or satellite solves. nlmtt8 is chip-EV only."
+          },
+          "stack": {
+            "type": "number",
+            "description": "Stack depth in big blinds, e.g. 100"
+          },
+          "spot": {
+            "type": "string",
+            "description": "Action path ending in an action"
+          },
+          "hand": {
+            "type": "string",
+            "description": "Optional hand/class, e.g. AKs or (KA)(KA)"
+          },
+          "minFreq": {
+            "type": "number",
+            "description": "Drop hands at or below this weight (PLO ranges are large)"
+          },
+          "detail": {
+            "type": "string",
+            "enum": [
+              "compact",
+              "full"
+            ],
+            "description": "Response detail. \"compact\" is the default and removes bulk maps; use \"full\" only when exact complete data is required."
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum compact rows to return (default 120, maximum 500)."
+          }
+        },
+        "required": [
+          "game",
+          "stack",
+          "spot"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_node",
+      "description": "Actions available at a decision node. `history` is an action path ending in the position about to act, e.g. \"UTG_60%_HJ\". sizeBb is the raise-to in big blinds and sizePctPot is the percent of the pot after calling (nlmtt8 40bb Open 40034 is 2.19bb; the pack label is 2.2x). evs are small blinds relative to fold. Compact mode returns action totals; add `hand` for its exact mixed strategy. full=true is full=1: all 169 hold'em hands with explicit 0, and no invented EVs.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "game": {
+            "type": "string",
+            "enum": [
+              "nl",
+              "nl9",
+              "nlmtt8",
+              "nlh8-hydra",
+              "plo",
+              "plo5",
+              "plo9",
+              "plo6hu"
+            ],
+            "description": "\"nl\" = no-limit hold'em 6-max cash (169-grid hands, per-hand EV in small blinds), \"nl9\" = no-limit hold'em 9-max cash, \"nlmtt8\" = no-limit hold'em 8-max MTT chip-EV (10–300bb, 1bb BB-ante; Fold/Call/Limp/AI/Open/3B tokens), \"nlh8-hydra\" = no-limit hold'em 8-max MTT chip-EV with a classic 0.1bb ante from every seat (10, 20, 30, 60bb; same tokens as nlmtt8), \"plo\" = pot-limit Omaha 6-max cash (4-card), \"plo5\" = pot-limit Omaha 5-card 6-max (100bb, 1.2bb ante), \"plo9\" = pot-limit Omaha 9-max cash, \"plo6hu\" = 6-card Omaha heads-up (BTN vs BB, 100bb). Cash trees are not tournament, ICM, PKO, or satellite solves. nlmtt8 is chip-EV only."
+          },
+          "stack": {
+            "type": "number",
+            "description": "Stack depth in big blinds"
+          },
+          "history": {
+            "type": "string",
+            "description": "Action path ending in a position"
+          },
+          "hand": {
+            "type": "string",
+            "description": "Optional hand/class"
+          },
+          "minFreq": {
+            "type": "number",
+            "description": "Trim per-action ranges"
+          },
+          "full": {
+            "type": "boolean",
+            "description": "Hold'em only. When true, each action includes all 169 hands with weight 0 where the bundle omitted the hand. EVs stay only where the bundle scored them."
+          },
+          "detail": {
+            "type": "string",
+            "enum": [
+              "compact",
+              "full"
+            ],
+            "description": "Response detail. \"compact\" is the default and removes bulk maps; use \"full\" only when exact complete data is required."
+          }
+        },
+        "required": [
+          "game",
+          "stack",
+          "history"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_config",
+      "description": "Table for one preflop game and stack, in big blinds: seats, stacks, blinds (sb 0.5, bb 1), ante, antePostedBy, stackIncludesAnte, openSizes (first-in raise-to), evUnit, evBaseline. Convergence is not published. stackIncludesAnte is true: the named depth is the starting stack and the 1bb BB ante is posted from it. openSizes at 40bb is open 2.2x (listing 2.2bb; node decodes code 40034 to 2.19bb) and SB 2.8x (2.8bb). 10bb is all-in/fold versus 50bb stacks, so stacks is null there. evs on nodes are small blinds relative to fold. Example: get_config({ game: \"nlmtt8\", stack: 40 }).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "game": {
+            "type": "string",
+            "enum": [
+              "nl",
+              "nl9",
+              "nlmtt8",
+              "nlh8-hydra",
+              "plo",
+              "plo5",
+              "plo9",
+              "plo6hu"
+            ],
+            "description": "\"nl\" = no-limit hold'em 6-max cash (169-grid hands, per-hand EV in small blinds), \"nl9\" = no-limit hold'em 9-max cash, \"nlmtt8\" = no-limit hold'em 8-max MTT chip-EV (10–300bb, 1bb BB-ante; Fold/Call/Limp/AI/Open/3B tokens), \"nlh8-hydra\" = no-limit hold'em 8-max MTT chip-EV with a classic 0.1bb ante from every seat (10, 20, 30, 60bb; same tokens as nlmtt8), \"plo\" = pot-limit Omaha 6-max cash (4-card), \"plo5\" = pot-limit Omaha 5-card 6-max (100bb, 1.2bb ante), \"plo9\" = pot-limit Omaha 9-max cash, \"plo6hu\" = 6-card Omaha heads-up (BTN vs BB, 100bb). Cash trees are not tournament, ICM, PKO, or satellite solves. nlmtt8 is chip-EV only."
+          },
+          "stack": {
+            "type": "number",
+            "description": "Stack depth in big blinds, e.g. 40"
+          }
+        },
+        "required": [
+          "game",
+          "stack"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "list_spots",
+      "description": "Search valid decision nodes for a stack depth, tagged by depth (1 = RFI, 2 = vs open, 3 = 3-bet pots, …). Compact mode is paginated; use depth, contains, and offset to narrow results without loading thousands of paths. plo9 has no spot index: walk it with get_node from history \"UTG\".",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "game": {
+            "type": "string",
+            "enum": [
+              "nl",
+              "nl9",
+              "nlmtt8",
+              "nlh8-hydra",
+              "plo",
+              "plo5",
+              "plo9",
+              "plo6hu"
+            ],
+            "description": "\"nl\" = no-limit hold'em 6-max cash (169-grid hands, per-hand EV in small blinds), \"nl9\" = no-limit hold'em 9-max cash, \"nlmtt8\" = no-limit hold'em 8-max MTT chip-EV (10–300bb, 1bb BB-ante; Fold/Call/Limp/AI/Open/3B tokens), \"nlh8-hydra\" = no-limit hold'em 8-max MTT chip-EV with a classic 0.1bb ante from every seat (10, 20, 30, 60bb; same tokens as nlmtt8), \"plo\" = pot-limit Omaha 6-max cash (4-card), \"plo5\" = pot-limit Omaha 5-card 6-max (100bb, 1.2bb ante), \"plo9\" = pot-limit Omaha 9-max cash, \"plo6hu\" = 6-card Omaha heads-up (BTN vs BB, 100bb). Cash trees are not tournament, ICM, PKO, or satellite solves. nlmtt8 is chip-EV only."
+          },
+          "stack": {
+            "type": "number",
+            "description": "Stack depth in big blinds"
+          },
+          "depth": {
+            "type": "number",
+            "description": "Optional decision depth filter"
+          },
+          "contains": {
+            "type": "string",
+            "description": "Optional case-insensitive history substring filter"
+          },
+          "offset": {
+            "type": "number",
+            "description": "Compact pagination offset"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum compact rows to return (default 120, maximum 500)."
+          },
+          "detail": {
+            "type": "string",
+            "enum": [
+              "compact",
+              "full"
+            ],
+            "description": "Response detail. \"compact\" is the default and removes bulk maps; use \"full\" only when exact complete data is required."
+          }
+        },
+        "required": [
+          "game",
+          "stack"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "list_postflop_packs",
+      "description": "Every solved postflop pack: preflop line, positions (OOP vs IP), stack, pot, the bet-size trees it is solved under, and the solved boards. Boards use the spaced form (\"3h 3d 2s\"). NLHE packs list `sizingTrees`: \"75\" (75% pot every street, the pack id itself) and \"33\" (33% pot on the flop, then 75%, under the `<pack>-flop33` id); every postflop tool accepts either tree's packId. PLO5 packs (ids starting plo5-) solve one 33% flop tree, flop decisions only. Compact output lists board names per pack. Pass `pack` (the 75% id or the -flop33 id) for that tree's per-board detail and per-flop exploitability where the index publishes a number. Missing exploitability is omitted, never estimated. Pass `variant` to list only NLHE or PLO5 packs. Call this before get_postflop_node.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "variant": {
+            "type": "string",
+            "enum": [
+              "nlhe",
+              "plo5"
+            ],
+            "description": "Only packs of this game: nlhe (hold'em) or plo5 (five-card Omaha)"
+          },
+          "pack": {
+            "type": "string",
+            "description": "One pack id (75% id or the -flop33 id): per-board detail and that tree's exploitability"
+          },
+          "detail": {
+            "type": "string",
+            "enum": [
+              "compact",
+              "full"
+            ],
+            "description": "Response detail. \"compact\" is the default and removes bulk maps; use \"full\" only when exact complete data is required."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_postflop_node",
+      "description": "One postflop solver node: the acting player's strategy for every hand class, the legal next segments, board, reach and the reach-weighted action split. Walk deeper by appending a returned childSegment (an action like \"Bet 5.5\" or a runout like \"deal:7c\") to `path`.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "pack": {
+            "type": "string",
+            "description": "Pack id from list_postflop_packs. Use a sizingTrees packId to pick the tree: the pack id for 75% pot on the flop, or \"<pack>-flop33\" for 33%."
+          },
+          "board": {
+            "type": "string",
+            "description": "Board in spaced form, e.g. \"3h 3d 2s\""
+          },
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Segments from the root, e.g. [\"Check\", \"Bet 5.5\"]. Empty for the root node."
+          },
+          "combo": {
+            "type": "string",
+            "description": "Optional exact combo, e.g. AsKh (PLO5: five cards, as listed in the node's hands)"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum representative compact combos (default 40, maximum 200)"
+          },
+          "detail": {
+            "type": "string",
+            "enum": [
+              "compact",
+              "full"
+            ],
+            "description": "Response detail. \"compact\" is the default and removes bulk maps; use \"full\" only when exact complete data is required."
+          }
+        },
+        "required": [
+          "pack",
+          "board"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "explain_combo",
+      "description": "Preferred tool for exact NLHE postflop hand questions. Returns a canonical context, exact action mix, action EV/loss when available, made-hand and draw classification, blocker facts, and same-rank-class suit comparisons. The server computes evidence; the agent should phrase causality as interpretation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "pack": {
+            "type": "string",
+            "description": "Pack id from list_postflop_packs. Use a sizingTrees packId to pick the tree: the pack id for 75% pot on the flop, or \"<pack>-flop33\" for 33%."
+          },
+          "board": {
+            "type": "string",
+            "description": "Board in spaced form, e.g. \"6s 4h 2s\""
+          },
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Exact childSegment path from get_postflop_node, e.g. [\"Check\", \"Bet 5.5\"]. Empty for the root."
+          },
+          "combo": {
+            "type": "string",
+            "description": "Required exact two-card combo, e.g. As5s"
+          },
+          "comparisonLimit": {
+            "type": "number",
+            "description": "Maximum same-rank-class suit comparisons (default 6, maximum 12)"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "cash",
+              "mtt"
+            ],
+            "description": "Requested poker format. \"cash\" uses the cash trees. \"mtt\" is supported only for preflop chip-EV against game nlmtt8; ICM, PKO, and satellite remain unsupported."
+          },
+          "objective": {
+            "type": "string",
+            "enum": [
+              "solver_ev",
+              "chip_ev",
+              "icm",
+              "pko",
+              "satellite"
+            ],
+            "description": "Requested optimization objective. chip_ev is supported for nlmtt8 preflop. ICM, PKO, and satellite return unsupported coverage."
+          },
+          "anteBb": {
+            "type": "number",
+            "description": "Requested ante in bb. nlmtt8 models a 1bb BB-ante; other positive antes return unsupported coverage."
+          }
+        },
+        "required": [
+          "pack",
+          "board",
+          "combo"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_board_report",
+      "description": "Preferred tool for board-texture heuristics. Aggregates action frequencies and range/action composition across solved boards in one postflop pack. Results explicitly report sample breadth and use equal weight per board.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "pack": {
+            "type": "string",
+            "description": "Pack id from list_postflop_packs. Use a sizingTrees packId to pick the tree: the pack id for 75% pot on the flop, or \"<pack>-flop33\" for 33%."
+          },
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Exact childSegment path from get_postflop_node, e.g. [\"Check\", \"Bet 5.5\"]. Empty for the root."
+          },
+          "filters": {
+            "type": "object",
+            "properties": {
+              "pairedness": {
+                "type": "string",
+                "enum": [
+                  "unpaired",
+                  "paired",
+                  "double_paired",
+                  "trips",
+                  "quads"
+                ]
+              },
+              "suitTexture": {
+                "type": "string",
+                "enum": [
+                  "rainbow",
+                  "two_tone",
+                  "monotone",
+                  "three_flush",
+                  "four_flush",
+                  "five_flush"
+                ]
+              },
+              "highCard": {
+                "type": "string",
+                "enum": [
+                  "2",
+                  "3",
+                  "4",
+                  "5",
+                  "6",
+                  "7",
+                  "8",
+                  "9",
+                  "T",
+                  "J",
+                  "Q",
+                  "K",
+                  "A"
+                ]
+              },
+              "highCardClass": {
+                "type": "string",
+                "enum": [
+                  "ace_high",
+                  "broadway_high",
+                  "middle",
+                  "low"
+                ]
+              },
+              "connectivity": {
+                "type": "string",
+                "enum": [
+                  "connected",
+                  "semi_connected",
+                  "disconnected"
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "boardLimit": {
+            "type": "number",
+            "description": "Maximum matching boards to analyze (default and maximum 50)"
+          },
+          "representativeLimit": {
+            "type": "number",
+            "description": "Maximum representative boards returned (default 12, maximum 20)"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "cash",
+              "mtt"
+            ],
+            "description": "Requested poker format. \"cash\" uses the cash trees. \"mtt\" is supported only for preflop chip-EV against game nlmtt8; ICM, PKO, and satellite remain unsupported."
+          },
+          "objective": {
+            "type": "string",
+            "enum": [
+              "solver_ev",
+              "chip_ev",
+              "icm",
+              "pko",
+              "satellite"
+            ],
+            "description": "Requested optimization objective. chip_ev is supported for nlmtt8 preflop. ICM, PKO, and satellite return unsupported coverage."
+          },
+          "anteBb": {
+            "type": "number",
+            "description": "Requested ante in bb. nlmtt8 models a 1bb BB-ante; other positive antes return unsupported coverage."
+          }
+        },
+        "required": [
+          "pack"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "compare_strategies",
+      "description": "Preferred tool for differences between two preflop or postflop contexts. The server fetches both strategies and returns action-frequency/EV deltas plus the largest postflop combo changes, avoiding two large node payloads.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "enum": [
+              "preflop",
+              "postflop"
+            ],
+            "description": "Preflop contexts use game/stack/history/hand. Postflop contexts use pack/board/path/combo."
+          },
+          "baseline": {
+            "type": "object",
+            "properties": {
+              "game": {
+                "type": "string",
+                "enum": [
+                  "nl",
+                  "nl9",
+                  "nlmtt8",
+                  "nlh8-hydra",
+                  "plo",
+                  "plo5",
+                  "plo9",
+                  "plo6hu"
+                ]
+              },
+              "stack": {
+                "type": "number"
+              },
+              "history": {
+                "type": "string"
+              },
+              "hand": {
+                "type": "string"
+              },
+              "pack": {
+                "type": "string",
+                "description": "Pack id from list_postflop_packs. Use a sizingTrees packId to pick the tree: the pack id for 75% pot on the flop, or \"<pack>-flop33\" for 33%."
+              },
+              "board": {
+                "type": "string"
+              },
+              "path": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Exact childSegment path from get_postflop_node, e.g. [\"Check\", \"Bet 5.5\"]. Empty for the root."
+              },
+              "combo": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "comparison": {
+            "type": "object",
+            "properties": {
+              "game": {
+                "type": "string",
+                "enum": [
+                  "nl",
+                  "nl9",
+                  "nlmtt8",
+                  "nlh8-hydra",
+                  "plo",
+                  "plo5",
+                  "plo9",
+                  "plo6hu"
+                ]
+              },
+              "stack": {
+                "type": "number"
+              },
+              "history": {
+                "type": "string"
+              },
+              "hand": {
+                "type": "string"
+              },
+              "pack": {
+                "type": "string",
+                "description": "Pack id from list_postflop_packs. Use a sizingTrees packId to pick the tree: the pack id for 75% pot on the flop, or \"<pack>-flop33\" for 33%."
+              },
+              "board": {
+                "type": "string"
+              },
+              "path": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Exact childSegment path from get_postflop_node, e.g. [\"Check\", \"Bet 5.5\"]. Empty for the root."
+              },
+              "combo": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "comboLimit": {
+            "type": "number",
+            "description": "Maximum largest-changing combos for aggregate postflop comparisons (default 12, maximum 50)"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "cash",
+              "mtt"
+            ],
+            "description": "Requested poker format. \"cash\" uses the cash trees. \"mtt\" is supported only for preflop chip-EV against game nlmtt8; ICM, PKO, and satellite remain unsupported."
+          },
+          "objective": {
+            "type": "string",
+            "enum": [
+              "solver_ev",
+              "chip_ev",
+              "icm",
+              "pko",
+              "satellite"
+            ],
+            "description": "Requested optimization objective. chip_ev is supported for nlmtt8 preflop. ICM, PKO, and satellite return unsupported coverage."
+          },
+          "anteBb": {
+            "type": "number",
+            "description": "Requested ante in bb. nlmtt8 models a 1bb BB-ante; other positive antes return unsupported coverage."
+          }
+        },
+        "required": [
+          "domain",
+          "baseline",
+          "comparison"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "list_datasets",
+      "description": "List preflop datasets in the shipped tree documentation (stacks, positions, whether each bundle was analyzed). Preflop exploitability is not available.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_tree_docs",
+      "description": "Tree documentation for one dataset: coverage note from the shipped README and per-stack bundle or node counts from the shipped index. Does not read or modify range bytes.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "dataset": {
+            "type": "string",
+            "description": "Dataset id from list_datasets, e.g. \"nl/v2\", \"nl9\", \"nlmtt8\", \"plo\", \"plo9\", \"plo5\", \"plo6hu\"."
+          }
+        },
+        "required": [
+          "dataset"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_range_metadata",
+      "description": "Index metadata for one preflop game, stack, and path: bundle stats for hold'em/PLO bundles, or the matching node row for plo5 and plo6hu. Does not return a strategy and does not invent exploitability.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "game": {
+            "type": "string"
+          },
+          "stack": {
+            "type": "number"
+          },
+          "path": {
+            "type": "string",
+            "description": "Action path, e.g. UTG_Open or LJ_Fold. Use (root) or empty for the plo5 root."
+          }
+        },
+        "required": [
+          "game",
+          "stack",
+          "path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_exploitability",
+      "description": "Preflop exploitability for a game. No preflop dataset publishes exploitability, convergence, or iteration counts. The answer is not available; this tool never fills in a number.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "game": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "game"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_postflop_range",
+      "description": "The range a player takes one flop action with, from a solved pack: hand-class weights (\"AA:1,AKs:0.42,...\", same format as the preflop ranges) after every earlier flop action on the path. `path` ends in the action whose range you want, e.g. [\"Check\", \"Bet 1.8\", \"Call 1.8\"] for the check-call range. Bet-size tree. \"33\" = 33% pot on the flop, then 75% pot on the turn and river, plus all-in. \"75\" = 75% pot on every street, plus all-in. Compact and full detail apply to the other range tools; this returns the action range itself.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "pack": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "description": "Pack id from list_postflop_packs"
+          },
+          "tree": {
+            "type": "string",
+            "enum": [
+              "33",
+              "75"
+            ]
+          },
+          "board": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 40,
+            "description": "Flop, e.g. \"3h 3d 2s\""
+          },
+          "path": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 8,
+            "items": {
+              "type": "string",
+              "pattern": "^(Check|Fold|Call|Bet|Raise|AllIn)( \\d+(\\.\\d+)?)?$"
+            },
+            "description": "Flop actions ending in the action whose range you want"
+          },
+          "hand": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "minFreq": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "pack",
+          "tree",
+          "board",
+          "path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "find_hands",
+      "description": "Find hands the account has uploaded. Returns hand_id, session_id, handAt, position, cards, game, board, potType, street lines, and netBb. Solver grade buckets are not filled. If this account has no hands, offer the hosted upload page from get_upload_link (https://pokerdata.io/upload) instead of asking the user to paste histories into chat.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "game_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "NLHE",
+                  "PLO",
+                  "PLO5",
+                  "PLO6"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "table_size": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 9
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "filter": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "position": {
+                    "anyOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "UTG",
+                            "UTG1",
+                            "UTG2",
+                            "MP",
+                            "LJ",
+                            "HJ",
+                            "CO",
+                            "BTN",
+                            "SB",
+                            "BB"
+                          ]
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "wasSrp": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "wasThreeBetPot": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "isPfr": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "isIpVsPfr": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "sawFlop": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "vpip": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "pfr": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "rfiOpp": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "rfi": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "threeBet": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "facedThreeBet": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "foldedToThreeBet": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "limped": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "facedLimp": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "vsThreeBetAction": {
+                    "anyOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "fold",
+                            "call",
+                            "raise"
+                          ]
+                        },
+                        "description": "Opener's action vs a 3-bet: fold, call, or raise (4-bet)."
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "sawShowdown": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "wonAtShowdown": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "flopFirstAction": {
+                    "anyOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "check",
+                            "bet",
+                            "call",
+                            "fold",
+                            "raise"
+                          ]
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "flopFirstResponseToBet": {
+                    "anyOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "check",
+                            "bet",
+                            "call",
+                            "fold",
+                            "raise"
+                          ]
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "turnFirstAction": {
+                    "anyOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "check",
+                            "bet",
+                            "call",
+                            "fold",
+                            "raise"
+                          ]
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "turnFirstResponseToBet": {
+                    "anyOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "check",
+                            "bet",
+                            "call",
+                            "fold",
+                            "raise"
+                          ]
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "riverFirstAction": {
+                    "anyOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "check",
+                            "bet",
+                            "call",
+                            "fold",
+                            "raise"
+                          ]
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "riverFirstResponseToBet": {
+                    "anyOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "check",
+                            "bet",
+                            "call",
+                            "fold",
+                            "raise"
+                          ]
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "flopFacedBetPctPot": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "min": {
+                            "anyOf": [
+                              {
+                                "type": "number",
+                                "minimum": 0,
+                                "description": "Inclusive lower bound, % of pot."
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "max": {
+                            "anyOf": [
+                              {
+                                "type": "number",
+                                "minimum": 0,
+                                "description": "Exclusive upper bound, % of pot."
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "turnFacedBetPctPot": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "min": {
+                            "anyOf": [
+                              {
+                                "type": "number",
+                                "minimum": 0,
+                                "description": "Inclusive lower bound, % of pot."
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "max": {
+                            "anyOf": [
+                              {
+                                "type": "number",
+                                "minimum": 0,
+                                "description": "Exclusive upper bound, % of pot."
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "riverFacedBetPctPot": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "min": {
+                            "anyOf": [
+                              {
+                                "type": "number",
+                                "minimum": 0,
+                                "description": "Inclusive lower bound, % of pot."
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "max": {
+                            "anyOf": [
+                              {
+                                "type": "number",
+                                "minimum": 0,
+                                "description": "Exclusive upper bound, % of pot."
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "flopBetPctPot": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "min": {
+                            "anyOf": [
+                              {
+                                "type": "number",
+                                "minimum": 0,
+                                "description": "Inclusive lower bound, % of pot."
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "max": {
+                            "anyOf": [
+                              {
+                                "type": "number",
+                                "minimum": 0,
+                                "description": "Exclusive upper bound, % of pot."
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "turnBetPctPot": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "min": {
+                            "anyOf": [
+                              {
+                                "type": "number",
+                                "minimum": 0,
+                                "description": "Inclusive lower bound, % of pot."
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "max": {
+                            "anyOf": [
+                              {
+                                "type": "number",
+                                "minimum": 0,
+                                "description": "Exclusive upper bound, % of pot."
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "riverBetPctPot": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "min": {
+                            "anyOf": [
+                              {
+                                "type": "number",
+                                "minimum": 0,
+                                "description": "Inclusive lower bound, % of pot."
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "max": {
+                            "anyOf": [
+                              {
+                                "type": "number",
+                                "minimum": 0,
+                                "description": "Exclusive upper bound, % of pot."
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "gto_vs_3bet_bucket": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "solver_default",
+                  "mixer",
+                  "freq0",
+                  "no_reach",
+                  "unmapped"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "gto_plo5_rfi_bucket": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "solver_default",
+                  "mixer",
+                  "freq0",
+                  "no_reach",
+                  "unmapped"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "recent",
+              "biggest_win",
+              "biggest_loss"
+            ],
+            "default": "biggest_loss"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 10
+          }
+        },
+        "required": [
+          "sort",
+          "limit"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_hand_results",
+      "description": "Per-hand cumulative results for a winnings curve. `points` is [{ hand, bb }], oldest to newest, downsampled. Pass session_id for one session. If this account has no hands, offer the hosted upload page from get_upload_link (https://pokerdata.io/upload) instead of asking the user to paste histories into chat.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "max_points": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 200,
+            "default": 80
+          }
+        },
+        "required": [
+          "max_points"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_session_summary",
+      "description": "Headline numbers and HUD rates for one uploaded session.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "list_my_sessions",
+      "description": "Recent uploaded sessions, newest first: id, hero, game type, dates, hands, and net result. game_type matches hole-card count. If this account has no hands, offer the hosted upload page from get_upload_link (https://pokerdata.io/upload) instead of asking the user to paste histories into chat.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 10
+          },
+          "game_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "NLHE",
+                  "PLO",
+                  "PLO5",
+                  "PLO6"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "limit"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_tournament_results",
+      "description": "MTT results imported from tournament summary files. Money is in cents. Hand histories are not a source of buy-ins or prizes. If this account has no hands, offer the hosted upload page from get_upload_link (https://pokerdata.io/upload) instead of asking the user to paste histories into chat.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "default": 200
+          }
+        },
+        "required": [
+          "limit"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "list_my_opponents",
+      "description": "Tracked opponents from uploaded hands. Each row has handCount, handsVsHero, and heroBb100Vs. Pass name to find one villain.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "default": 50
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hero": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "game_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "min_hands": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "hands",
+              "last_seen",
+              "toughest",
+              "softest"
+            ],
+            "default": "hands"
+          }
+        },
+        "required": [
+          "limit",
+          "min_hands",
+          "sort"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_opponent_notes",
+      "description": "Leak notes computed from uploaded hands for one opponent, with the sample size on each line.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "opponent_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "opponent_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_opponent_limp_range",
+      "description": "Shown-hand first-in limp range: 169-class counts of hole cards villains showed after an open limp. Pass position for one seat. Sample is showdown-only. This is not a solver range.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "opponent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "UTG",
+                    "UTG1",
+                    "UTG2",
+                    "MP",
+                    "LJ",
+                    "HJ",
+                    "CO",
+                    "BTN",
+                    "SB",
+                    "BB"
+                  ]
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "table_size": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 9
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "game_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "NLHE",
+                  "PLO",
+                  "PLO5",
+                  "PLO6"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 169,
+            "default": 30
+          }
+        },
+        "required": [
+          "limit"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "enqueue_solve",
+      "description": "Record a heads-up postflop solve request. Required: title, board, pot (bb), effective_stack (bb). The job stays pending: solver dispatch and billing are not configured, so this does not start a solve.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "board": {
+            "type": "string",
+            "minLength": 5
+          },
+          "pot": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "effective_stack": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "oop_range": {
+            "type": "string"
+          },
+          "ip_range": {
+            "type": "string"
+          },
+          "bet_sizes": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          },
+          "add_allin": {
+            "type": "boolean"
+          },
+          "max_aggressions": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "iterations": {
+            "type": "integer",
+            "minimum": 50,
+            "maximum": 5000
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "title",
+          "board",
+          "pot",
+          "effective_stack"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_queued_solve",
+      "description": "Look up one queued solve for this account. status is pending, running, done, or failed. solution_id is null until a worker exists.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "queue_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          }
+        },
+        "required": [
+          "queue_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "list_queued_solves",
+      "description": "List this account's solver-queue jobs, newest first. Jobs are not dispatched.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 20
+          }
+        },
+        "required": [
+          "limit"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "list_library_solutions",
+      "description": "Finished postflop solutions saved for this account. None are marked done while dispatch is disabled.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 20
+          }
+        },
+        "required": [
+          "limit"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_upload_link",
+      "description": "Primary hand-upload path. Returns https://pokerdata.io/upload on this origin, with a short-lived signed token for the caller's account when signing is configured. Hand the URL to the user. Pasting histories into chat is the fallback.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "upload_hand_history",
+      "description": "Secondary upload path for a small paste. Prefer get_upload_link and the hosted /upload page. Runs the same ingestion pipeline and returns hands parsed, tournaments parsed, and errors. Does not grade solver frequencies.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Raw hand history or tournament summary text."
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ]
+}
