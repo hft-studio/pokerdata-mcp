@@ -85,7 +85,9 @@ curl -s https://pokerdata.io/api/mcp -H 'Content-Type: application/json' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_node","arguments":{"game":"nl","stack":100,"history":"UTG"}}}'
 ```
 
-More in [`examples/`](examples/): curl, Python, and the REST API.
+More in [`examples/`](examples/): a live example for every MCP tool,
+real-world scenarios (NL and PLO ranges, the npm bridge, raw JSON-RPC, Node,
+Python, client configs, REST) and a smoke test, all with captured responses.
 
 ## Tools
 
