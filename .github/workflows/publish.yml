@@ -32,6 +32,15 @@ jobs:
           printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' \
             | node bin/pokerdata-mcp.js | jq -e '.result.tools | length > 0'
 
+      - name: Wait for the npm version to appear
+        run: |
+          v=$(jq -r .version package.json)
+          for i in $(seq 1 30); do
+            curl -sf "https://registry.npmjs.org/pokerdata-mcp/$v" > /dev/null && exit 0
+            sleep 10
+          done
+          echo "pokerdata-mcp@$v never appeared on npm"; exit 1
+
       - name: Publish to the MCP registry
         run: |
           curl -sL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
@@ -65,4 +74,9 @@ jobs:
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
             test "$(jq -r .version package.json)" = "${GITHUB_REF#refs/tags/v}"
           fi
-          npm publish --access public
+          v=$(jq -r .version package.json)
+          if npm view "pokerdata-mcp@$v" version > /dev/null 2>&1; then
+            echo "pokerdata-mcp@$v is already on npm"
+          else
+            npm publish --access public
+          fi
