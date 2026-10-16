@@ -72,5 +72,11 @@ rl.on("line", (line) => {
   queue = queue.then(() => forward(line));
 });
 rl.on("close", () => {
-  queue.then(() => process.exit(0));
+  // Do not call process.exit here: when stdout is a pipe, writes are async
+  // and exiting would cut off any reply still buffered (e.g. a tools/list
+  // larger than 64 KB). Once the queue settles and stdout drains, the event
+  // loop empties and Node exits on its own with this code.
+  queue.then(() => {
+    process.exitCode = 0;
+  });
 });
