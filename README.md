@@ -105,8 +105,10 @@ Preflop spots are action paths such as `UTG_60%_HJ_Call` (NLHE) or
 default; pass `detail: "full"` for complete maps. Full contract:
 [docs.pokerdata.io/ranges](https://docs.pokerdata.io/ranges).
 
-Every tool's full definition (name, description and input schema), exactly
-as the server returns it from `tools/list`, is in [`tools.json`](tools.json).
+Every tool's full definition — name, title, description, input schema, output
+schema and behaviour annotations — exactly as the server returns it from
+`tools/list`, is in [`tools.json`](tools.json). Every tool also returns
+`structuredContent` matching its output schema alongside the text result.
 
 ## Plans
 
@@ -131,10 +133,17 @@ before connecting anything:
 
 ## How the solves were made
 
-Preflop cash trees are MonkerSolver solutions. The tournament and postflop
-solves come from our own engine, validated against MonkerSolver as described
-at [pokerdata.io/methodology](https://pokerdata.io/methodology). Postflop
-exploitability is published per board (`list_postflop_packs` with a `pack`).
+Preflop cash trees come from established commercial solver packs. The
+tournament and postflop solves come from our own engine, validated against an
+independent reference solve of the same game tree — the comparison, position
+by position, is at
+[pokerdata.io/methodology](https://pokerdata.io/methodology).
+
+Nothing is estimated to fill a gap. Postflop exploitability is published per
+board (`list_postflop_packs` with a `pack`) and omitted where the solve does
+not carry it. No preflop dataset publishes exploitability, convergence or
+iteration counts, and `get_exploitability` says so instead of returning a
+number.
 
 ## Related
 

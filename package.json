@@ -1,6 +1,6 @@
 {
   "name": "pokerdata-mcp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "MCP server for GTO poker solver data: preflop ranges and postflop strategy for no-limit hold'em and pot-limit Omaha, from pokerdata.io.",
   "mcpName": "io.github.hft-studio/pokerdata",
   "bin": {
