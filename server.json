@@ -15,7 +15,7 @@
     "url": "https://github.com/hft-studio/pokerdata-mcp",
     "source": "github"
   },
-  "version": "1.0.2",
+  "version": "1.0.3",
   "remotes": [
     {
       "type": "streamable-http",
@@ -34,7 +34,7 @@
     {
       "registryType": "npm",
       "identifier": "pokerdata-mcp",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "transport": {
         "type": "stdio"
       },
