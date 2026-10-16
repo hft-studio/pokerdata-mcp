@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "pokerdata": {
+      "url": "https://pokerdata.io/api/mcp",
+      "headers": { "Authorization": "Bearer pdk_YOUR_KEY" }
+    }
+  }
+}

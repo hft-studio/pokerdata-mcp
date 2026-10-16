@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "pokerdata": {
+      "command": "npx",
+      "args": ["-y", "pokerdata-mcp"],
+      "env": { "POKERDATA_API_KEY": "pdk_YOUR_KEY" }
+    }
+  }
+}

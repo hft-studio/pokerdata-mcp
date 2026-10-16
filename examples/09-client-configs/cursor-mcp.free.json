@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "pokerdata": {
+      "url": "https://pokerdata.io/api/mcp"
+    }
+  }
+}
