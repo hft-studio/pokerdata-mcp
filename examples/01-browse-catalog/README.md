@@ -22,7 +22,7 @@ curl -s https://pokerdata.io/api/mcp -H 'Content-Type: application/json' \
 
 ## Live output
 
-Captured 2026-10-16 01:45 UTC without `POKERDATA_API_KEY`. Long arrays and objects are trimmed by [`../lib/show.mjs`](../lib/show.mjs), which says how much it cut; nothing else is edited.
+Captured 2026-10-16 01:57 UTC without `POKERDATA_API_KEY`. Long arrays and objects are trimmed by [`../lib/show.mjs`](../lib/show.mjs), which says how much it cut; nothing else is edited.
 
 ```text
 $ tools/call list_games {}

@@ -6,6 +6,12 @@ read the node, then pull the opening range and one mixed hand. Free, no key.
 Spot names are action paths: `UTG_Fold_HJ_Fold_CO_Fold_BTN` is the BTN's
 decision, and appending the action (`_60%`, a 2.5bb open) names the range.
 
+Range counts printed after each `get_range` reply ("Computed from all N rows")
+come from the rows via `rangeStats` in [`../lib/pokerdata.mjs`](../lib/pokerdata.mjs),
+so nonzero = pure + mixed always holds. The server's own `summary` does not add
+up: it counts hands at frequency 0.995 as pure and leaves hands at 0.005 out of
+both buckets. That is a server issue, shown next to the computed counts.
+
 ## Run it
 
 ```sh
@@ -21,7 +27,7 @@ curl -s https://pokerdata.io/api/mcp -H 'Content-Type: application/json' \
 
 ## Live output
 
-Captured 2026-10-16 01:45 UTC without `POKERDATA_API_KEY`. Long arrays and objects are trimmed by [`../lib/show.mjs`](../lib/show.mjs), which says how much it cut; nothing else is edited.
+Captured 2026-10-16 01:57 UTC without `POKERDATA_API_KEY`. Long arrays and objects are trimmed by [`../lib/show.mjs`](../lib/show.mjs), which says how much it cut; nothing else is edited.
 
 ```text
 $ tools/call list_spots {"game":"nl","stack":100,"contains":"CO_Fold_BTN","depth":1,"limit":3}
@@ -75,7 +81,7 @@ $ tools/call get_node {"game":"nl","stack":100,"history":"UTG_Fold_HJ_Fold_CO_Fo
   "hint": "Compact node output gives action totals. Pass \"hand\" for its exact mixed strategy or use get_range for an action range."
 }
 
-$ tools/call get_range {"game":"nl","stack":100,"spot":"UTG_Fold_HJ_Fold_CO_Fold_BTN_60%"}
+$ tools/call get_range {"game":"nl","stack":100,"spot":"UTG_Fold_HJ_Fold_CO_Fold_BTN_60%","limit":500}
 {
   "game": "nl",
   "version": 2,
@@ -103,6 +109,8 @@ $ tools/call get_range {"game":"nl","stack":100,"spot":"UTG_Fold_HJ_Fold_CO_Fold
     "… 83 more items"
   ]
 }
+Computed from all 91 rows: 91 nonzero hands = 85 pure + 6 mixed, 550.88 combos
+Server summary says 91 = 86 pure + 4 mixed (server issue: frequency 0.995 counted as pure, 0.005 in neither bucket)
 
 $ tools/call get_range {"game":"nl","stack":100,"spot":"UTG_Fold_HJ_Fold_CO_Fold_BTN_60%","hand":"A3o"}
 {

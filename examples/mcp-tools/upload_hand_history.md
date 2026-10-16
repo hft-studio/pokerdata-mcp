@@ -5,7 +5,7 @@ Dry call: empty text fails the input schema (minLength 1), so the request is mea
 - Group: Your hands
 - Access: Writes to the account; called here with schema-invalid input only
 - Live status: **key gate observed (no key in this run)** (PASS)
-- Captured: 2026-10-16T01:46:00Z, without `POKERDATA_API_KEY`, HTTP 200, `isError: true`
+- Captured: 2026-10-16T01:58:09Z, without `POKERDATA_API_KEY`, HTTP 200, `isError: true`
 
 ## Call
 

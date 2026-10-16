@@ -1,6 +1,6 @@
 # Smoke test results
 
-- Date: 2026-10-16 (run started 2026-10-16T01:46:05.798Z)
+- Date: 2026-10-16 (run started 2026-10-16T01:58:14.719Z)
 - Command: `node examples/smoke-test --markdown examples/SMOKE_RESULTS.md`
 - MCP endpoint: https://pokerdata.io/api/mcp
 - REST base: https://pokerdata.io/api/v1
@@ -65,9 +65,9 @@
 | 52 | MCP tools | list_library_solutions [account] | PASS | key gate observed (no key in this run); HTTP 200; This needs an API key. 6-max NL cash preflop (game "nl"), list_games, list_postflop_packs and the tree docs ar… |
 | 53 | MCP tools | enqueue_solve [mutating] | PASS | key gate observed (no key in this run); HTTP 200; This needs an API key. 6-max NL cash preflop (game "nl"), list_games, list_postflop_packs and the tree docs ar… |
 | 54 | MCP tools | upload_hand_history [mutating] | PASS | key gate observed (no key in this run); HTTP 200; This needs an API key. 6-max NL cash preflop (game "nl"), list_games, list_postflop_packs and the tree docs ar… |
-| 55 | Scenarios | BTN open range, 6-max NL 100bb (get_range, no key) | PASS | 550.88 combos, 91 hand classes, AA ["AA",1,19.2] |
+| 55 | Scenarios | BTN open range, 6-max NL 100bb (get_range, no key) | PASS | from the rows: 550.88 combos, 91 hand classes = 85 pure + 6 mixed, AA ["AA",1,19.2] |
 | 56 | Scenarios | CO open vs BTN 3-bet, AQo (get_node, no key) | PASS | actor CO: Fold 0, Call 0.5, 95% 0.5, AI 0 |
-| 57 | Scenarios | get_range summary counts (BTN open range) | WARN | summary nonzero 91 = pure 86 + mixed 4? rows: 91 nonzero, 6 with 0 < freq < 1 (odd: pure + mixed does not add up to nonzeroHands) |
+| 57 | Scenarios | get_range server summary vs rows (BTN open range) | WARN | server summary 91 = 86 pure + 4 mixed; from the rows 91 = 85 pure + 6 mixed; combos server 550.88 vs rows 550.88 (server issue: frequency 0.995 counted as pure (T5s 0.995), 0.005 in neither bucket (Q3s 0.005); examples compute counts from the rows) |
 | 58 | Scenarios | get_range minFreq filter (CO 4-bet range, minFreq 0.5) | FAIL | 28 rows returned, 20 at or below 0.5 (lowest 0.005): minFreq is ignored |
 | 59 | Scenarios | EV baseline reported in a node after a 3-bet | WARN | compact: fold evSb -5, evBaseline absent; full: evBaseline null (odd: the default compact reply drops evBaseline, so a non-zero fold EV is not flagged) |
 | 60 | Paid data | nlmtt8 30bb UTG first-in node (get_node) | SKIP | no POKERDATA_API_KEY set; set a pdk_ key to run this check |

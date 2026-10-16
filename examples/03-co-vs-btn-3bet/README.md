@@ -7,6 +7,12 @@ In nodes after the hero has already put money in, EVs are not relative to
 folding at that node: the compact reply shows AQo's fold at `-5` sb (the 2.5bb
 open is lost). Pass `detail: "full"` to get `evBaseline` (it is `null` here).
 
+Range counts printed after each `get_range` reply ("Computed from all N rows")
+come from the rows via `rangeStats` in [`../lib/pokerdata.mjs`](../lib/pokerdata.mjs),
+so nonzero = pure + mixed always holds. The server's own `summary` does not add
+up: it counts hands at frequency 0.995 as pure and leaves hands at 0.005 out of
+both buckets. That is a server issue, shown next to the computed counts.
+
 ## Run it
 
 ```sh
@@ -22,7 +28,7 @@ curl -s https://pokerdata.io/api/mcp -H 'Content-Type: application/json' \
 
 ## Live output
 
-Captured 2026-10-16 01:45 UTC without `POKERDATA_API_KEY`. Long arrays and objects are trimmed by [`../lib/show.mjs`](../lib/show.mjs), which says how much it cut; nothing else is edited.
+Captured 2026-10-16 01:57 UTC without `POKERDATA_API_KEY`. Long arrays and objects are trimmed by [`../lib/show.mjs`](../lib/show.mjs), which says how much it cut; nothing else is edited.
 
 ```text
 $ tools/call get_node {"game":"nl","stack":100,"history":"UTG_Fold_HJ_Fold_CO_60%_BTN"}
@@ -56,7 +62,7 @@ $ tools/call get_node {"game":"nl","stack":100,"history":"UTG_Fold_HJ_Fold_CO_60
   "hint": "Compact node output gives action totals. Pass \"hand\" for its exact mixed strategy or use get_range for an action range."
 }
 
-$ tools/call get_range {"game":"nl","stack":100,"spot":"UTG_Fold_HJ_Fold_CO_60%_BTN_77%"}
+$ tools/call get_range {"game":"nl","stack":100,"spot":"UTG_Fold_HJ_Fold_CO_60%_BTN_77%","limit":500}
 {
   "game": "nl",
   "version": 2,
@@ -84,6 +90,8 @@ $ tools/call get_range {"game":"nl","stack":100,"spot":"UTG_Fold_HJ_Fold_CO_60%_
     "… 33 more items"
   ]
 }
+Computed from all 41 rows: 41 nonzero hands = 5 pure + 36 mixed, 157.99 combos
+Server summary says 41 = 6 pure + 33 mixed (server issue: frequency 0.995 counted as pure, 0.005 in neither bucket)
 
 $ tools/call get_node {"game":"nl","stack":100,"history":"UTG_Fold_HJ_Fold_CO_60%_BTN_77%_SB_Fold_BB_Fold_CO"}
 {
@@ -171,7 +179,7 @@ $ tools/call get_node {"game":"nl","stack":100,"history":"UTG_Fold_HJ_Fold_CO_60
   ]
 }
 
-$ tools/call get_range {"game":"nl","stack":100,"spot":"UTG_Fold_HJ_Fold_CO_60%_BTN_77%_SB_Fold_BB_Fold_CO_95%"}
+$ tools/call get_range {"game":"nl","stack":100,"spot":"UTG_Fold_HJ_Fold_CO_60%_BTN_77%_SB_Fold_BB_Fold_CO_95%","limit":500}
 {
   "game": "nl",
   "version": 2,
@@ -218,4 +226,6 @@ $ tools/call get_range {"game":"nl","stack":100,"spot":"UTG_Fold_HJ_Fold_CO_60%_
     ["KK", 1, 30.73]
   ]
 }
+Computed from all 28 rows: 28 nonzero hands = 3 pure + 25 mixed, 62.35 combos
+Server summary says 28 = 3 pure + 24 mixed (server issue: frequency 0.995 counted as pure, 0.005 in neither bucket)
 ```

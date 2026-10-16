@@ -5,7 +5,7 @@ Solutions in this key's library.
 - Group: Solve queue
 - Access: Needs any key (free trial included); reads that key's account
 - Live status: **key gate observed (no key in this run)** (PASS)
-- Captured: 2026-10-16T01:46:00Z, without `POKERDATA_API_KEY`, HTTP 200, `isError: true`
+- Captured: 2026-10-16T01:58:09Z, without `POKERDATA_API_KEY`, HTTP 200, `isError: true`
 
 ## Call
 

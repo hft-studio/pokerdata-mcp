@@ -20,7 +20,7 @@ never queues a solve or uploads a hand history.
 ## Coverage
 
 <!-- coverage:start -->
-Captured 2026-10-16T01:46:00Z without a key. Live `tools/list` returned 29 tools; every one has an example below.
+Captured 2026-10-16T01:58:09Z without a key. Live `tools/list` returned 29 tools; every one has an example below.
 
 | Tool | Group | Access | Example | Live status |
 |---|---|---|---|---|
