@@ -4,7 +4,8 @@
 # registry: lists the hosted server (https://pokerdata.io/api/mcp) in the
 #   official MCP registry. Logs in with GitHub OIDC, so it needs no secret.
 # npm: publishes the stdio bridge as `pokerdata-mcp` with npm trusted
-#   publishing (GitHub OIDC). The NPM_TOKEN secret is only a fallback.
+#   publishing (GitHub OIDC), so it needs no token. It runs first because
+#   the registry checks that the npm package it lists exists.
 name: Publish
 
 on:
@@ -14,6 +15,7 @@ on:
 
 jobs:
   registry:
+    needs: npm
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -47,10 +49,6 @@ jobs:
       # Trusted publishing: npm trusts this workflow through GitHub OIDC.
       id-token: write
       contents: read
-    env:
-      # Only for the first publish, before the package has a trusted
-      # publisher. Once it does, npm uses OIDC and this secret can go.
-      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@v5
 
