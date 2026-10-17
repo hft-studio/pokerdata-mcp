@@ -35,6 +35,21 @@ rather than a cash-game stand-in.
 
 ## Set it up
 
+[![Add to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=pokerdata&config=eyJ1cmwiOiJodHRwczovL3Bva2VyZGF0YS5pby9hcGkvbWNwIiwiaGVhZGVycyI6eyJBdXRob3JpemF0aW9uIjoiQmVhcmVyICR7ZW52OlBPS0VSREFUQV9BUElfS0VZfSJ9fQ==)
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=pokerdata&inputs=%5B%7B%22type%22%3A%22promptString%22%2C%22id%22%3A%22pokerdata_api_key%22%2C%22description%22%3A%22PokerData%20API%20key%20%28pdk_...%29.%20Leave%20blank%20for%20the%20free%206-max%20NL%20preflop%20tools.%22%2C%22password%22%3Atrue%7D%5D&config=%7B%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fpokerdata.io%2Fapi%2Fmcp%22%2C%22headers%22%3A%7B%22Authorization%22%3A%22Bearer%20%24%7Binput%3Apokerdata_api_key%7D%22%7D%7D)
+[![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_Server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=pokerdata&inputs=%5B%7B%22type%22%3A%22promptString%22%2C%22id%22%3A%22pokerdata_api_key%22%2C%22description%22%3A%22PokerData%20API%20key%20%28pdk_...%29.%20Leave%20blank%20for%20the%20free%206-max%20NL%20preflop%20tools.%22%2C%22password%22%3Atrue%7D%5D&config=%7B%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fpokerdata.io%2Fapi%2Fmcp%22%2C%22headers%22%3A%7B%22Authorization%22%3A%22Bearer%20%24%7Binput%3Apokerdata_api_key%7D%22%7D%7D)
+
+The buttons install the hosted server. Without a key the free 6-max NL cash
+preflop tools work straight away. To unlock everything, VS Code asks for your
+`pdk_` key when it starts the server (leave it blank for the free tools), and
+Cursor reads it from the `POKERDATA_API_KEY` environment variable.
+
+### Claude (claude.ai and Claude Desktop)
+
+Open **Settings → Connectors → Add custom connector**, name it `PokerData` and
+paste `https://pokerdata.io/api/mcp` as the URL. That gives you the free tools.
+For a key, use the Claude Desktop config below or Claude Code.
+
 ### Claude Code
 
 ```sh
@@ -48,12 +63,17 @@ claude mcp add --transport http pokerdata https://pokerdata.io/api/mcp \
 
 ### Cursor (`~/.cursor/mcp.json`)
 
+This is the same config the button installs, and the one in
+[`.mcp.json`](.mcp.json). Set `POKERDATA_API_KEY` in your environment, or
+replace `${env:POKERDATA_API_KEY}` with your key. The key is optional for the
+free tools.
+
 ```json
 {
   "mcpServers": {
     "pokerdata": {
       "url": "https://pokerdata.io/api/mcp",
-      "headers": { "Authorization": "Bearer pdk_YOUR_KEY" }
+      "headers": { "Authorization": "Bearer ${env:POKERDATA_API_KEY}" }
     }
   }
 }
@@ -151,4 +171,5 @@ number.
 - [Poker Study AI](https://www.pokerstudy.ai): an AI coach that reviews your hands against the same solves
 
 Code in this repository is MIT licensed. Sample data is provided for
-evaluation under the [pokerdata.io terms](https://pokerdata.io/terms).
+evaluation under the [pokerdata.io terms](https://pokerdata.io/terms); see
+[`samples/LICENSE.md`](samples/LICENSE.md).
