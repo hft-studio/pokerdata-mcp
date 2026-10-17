@@ -3508,7 +3508,7 @@
     },
     {
       "name": "get_session_summary",
-      "description": "Headline numbers and HUD rates for one uploaded session.",
+      "description": "One uploaded session's headline numbers: hero, game type, start and end times, hands played, net result in big blinds, and HUD rates (VPIP, PFR, 3-bet, open limp) as percentages with the sample size. Use it after list_my_sessions to report how a session went; use get_hand_results for its winnings curve and find_hands for individual hands. Returns an error for an unknown session id. Any key works, free trial included, and it never counts against the allowance. If this account has no hands, offer the hosted upload page from get_upload_link (https://pokerdata.io/upload) instead of asking the user to paste histories into chat.",
       "inputSchema": {
         "type": "object",
         "properties": {
