@@ -7,10 +7,10 @@ Point Claude, Cursor or any MCP client at it and ask "what does UTG open at
 solver's real frequencies and EVs, not a guess.
 
 - **Endpoint:** `https://pokerdata.io/api/mcp` (Streamable HTTP, stateless)
-- **Free without a key:** the tool list and every 6-max NL cash preflop tool,
-  all 8 stack depths
-- **Everything else:** a `pdk_` key from [pokerdata.io/app/api](https://pokerdata.io/app/api).
-  A free trial key (100 calls, no card) unlocks every data tool.
+- **Free without a key:** the tool list and the coverage and docs tools
+- **Strategy data:** a `pdk_` key from [pokerdata.io/app/api](https://pokerdata.io/app/api).
+  A free Starter key (25 calls or 50 MB a month, no card) unlocks every data
+  tool. Claude and other OAuth clients can sign in instead of pasting a key.
 
 This repository holds setup instructions, a small stdio bridge for clients
 that only speak stdio, examples and sample data. The data and the server are
@@ -36,27 +36,23 @@ rather than a cash-game stand-in.
 ## Set it up
 
 [![Add to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=pokerdata&config=eyJ1cmwiOiJodHRwczovL3Bva2VyZGF0YS5pby9hcGkvbWNwIiwiaGVhZGVycyI6eyJBdXRob3JpemF0aW9uIjoiQmVhcmVyICR7ZW52OlBPS0VSREFUQV9BUElfS0VZfSJ9fQ==)
-[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=pokerdata&inputs=%5B%7B%22type%22%3A%22promptString%22%2C%22id%22%3A%22pokerdata_api_key%22%2C%22description%22%3A%22PokerData%20API%20key%20%28pdk_...%29.%20Leave%20blank%20for%20the%20free%206-max%20NL%20preflop%20tools.%22%2C%22password%22%3Atrue%7D%5D&config=%7B%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fpokerdata.io%2Fapi%2Fmcp%22%2C%22headers%22%3A%7B%22Authorization%22%3A%22Bearer%20%24%7Binput%3Apokerdata_api_key%7D%22%7D%7D)
-[![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_Server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=pokerdata&inputs=%5B%7B%22type%22%3A%22promptString%22%2C%22id%22%3A%22pokerdata_api_key%22%2C%22description%22%3A%22PokerData%20API%20key%20%28pdk_...%29.%20Leave%20blank%20for%20the%20free%206-max%20NL%20preflop%20tools.%22%2C%22password%22%3Atrue%7D%5D&config=%7B%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fpokerdata.io%2Fapi%2Fmcp%22%2C%22headers%22%3A%7B%22Authorization%22%3A%22Bearer%20%24%7Binput%3Apokerdata_api_key%7D%22%7D%7D)
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=pokerdata&inputs=%5B%7B%22type%22%3A%22promptString%22%2C%22id%22%3A%22pokerdata_api_key%22%2C%22description%22%3A%22PokerData%20API%20key%20%28pdk_...%29.%20Get%20a%20free%20one%20at%20pokerdata.io%2Fapp%2Fapi.%22%2C%22password%22%3Atrue%7D%5D&config=%7B%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fpokerdata.io%2Fapi%2Fmcp%22%2C%22headers%22%3A%7B%22Authorization%22%3A%22Bearer%20%24%7Binput%3Apokerdata_api_key%7D%22%7D%7D)
+[![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_Server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=pokerdata&inputs=%5B%7B%22type%22%3A%22promptString%22%2C%22id%22%3A%22pokerdata_api_key%22%2C%22description%22%3A%22PokerData%20API%20key%20%28pdk_...%29.%20Get%20a%20free%20one%20at%20pokerdata.io%2Fapp%2Fapi.%22%2C%22password%22%3Atrue%7D%5D&config=%7B%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fpokerdata.io%2Fapi%2Fmcp%22%2C%22headers%22%3A%7B%22Authorization%22%3A%22Bearer%20%24%7Binput%3Apokerdata_api_key%7D%22%7D%7D)
 
-The buttons install the hosted server. Without a key the free 6-max NL cash
-preflop tools work straight away. To unlock everything, VS Code asks for your
-`pdk_` key when it starts the server (leave it blank for the free tools), and
+The buttons install the hosted server. Strategy tools need a `pdk_` key (the
+free Starter key works): VS Code asks for it when it starts the server, and
 Cursor reads it from the `POKERDATA_API_KEY` environment variable.
 
 ### Claude (claude.ai and Claude Desktop)
 
 Open **Settings → Connectors → Add custom connector**, name it `PokerData` and
-paste `https://pokerdata.io/api/mcp` as the URL. That gives you the free tools.
-For a key, use the Claude Desktop config below or Claude Code.
+paste `https://pokerdata.io/api/mcp` as the URL, then sign in with your
+PokerData account when Claude asks. Your plan's allowance applies, the free
+Starter allowance included.
 
 ### Claude Code
 
 ```sh
-# No key: 6-max NL cash preflop
-claude mcp add --transport http pokerdata https://pokerdata.io/api/mcp
-
-# With a key: every game and postflop
 claude mcp add --transport http pokerdata https://pokerdata.io/api/mcp \
   --header "Authorization: Bearer pdk_YOUR_KEY"
 ```
@@ -65,8 +61,7 @@ claude mcp add --transport http pokerdata https://pokerdata.io/api/mcp \
 
 This is the same config the button installs, and the one in
 [`.mcp.json`](.mcp.json). Set `POKERDATA_API_KEY` in your environment, or
-replace `${env:POKERDATA_API_KEY}` with your key. The key is optional for the
-free tools.
+replace `${env:POKERDATA_API_KEY}` with your key.
 
 ```json
 {
@@ -93,7 +88,7 @@ free tools.
 }
 ```
 
-Leave out `env` to use the free tools only. The bridge in
+Without `env`, only the tool list and the coverage and docs tools answer. The bridge in
 [`bin/pokerdata-mcp.js`](bin/pokerdata-mcp.js) has no dependencies and only
 forwards JSON-RPC to the hosted endpoint. Claude Desktop can also add
 `https://pokerdata.io/api/mcp` directly as a custom connector.
@@ -113,8 +108,8 @@ Python, client configs, REST) and a smoke test, all with captured responses.
 
 | Group | Tools | Key |
 |---|---|---|
-| Coverage and docs | `list_games`, `list_postflop_packs`, `list_datasets`, `get_tree_docs`, `get_exploitability` | Not needed |
-| Preflop | `get_range`, `get_node`, `list_spots`, `get_config`, `get_range_metadata` | Not needed for `game: "nl"`; needed for every other game |
+| Coverage and docs | `get_started`, `list_games`, `list_postflop_packs`, `list_datasets`, `get_tree_docs`, `get_exploitability` | Not needed |
+| Preflop | `get_range`, `get_node`, `list_spots`, `get_config`, `get_range_metadata` | Needed, 6-max NL included; the free Starter key works |
 | Postflop | `get_postflop_node`, `get_postflop_range` | Needed |
 | Coaching | `explain_combo`, `get_board_report`, `compare_strategies` | Needed |
 | Your hands | hand, session and opponent tools, hand upload | Any key, free trial included; never counts against your allowance |
@@ -134,8 +129,9 @@ schema and behaviour annotations — exactly as the server returns it from
 
 | Plan | Price | What you get |
 |---|---|---|
-| No key | Free | Tool list, coverage tools, 6-max NL cash preflop at every stack. 200 tool calls a day per IP |
-| Starter | Free key, no card | Every data tool, 100 calls (or 50 MB) lifetime. Personal use |
+| No key | Free | Tool list, coverage and docs tools |
+| Starter | Free key, no card | Every data tool, 25 calls or 50 MB a month. Personal use |
+| Hobbyist | $10/month | Every data tool, 10,000 calls or 200 MB a month, 5 requests a second. Personal use |
 | Pro | $100/month | Every game and all postflop, 250,000 calls or 5 GB a month. Personal use |
 | Enterprise | $250/month | Everything in Pro, **commercial use allowed**, 5 million calls or 100 GB a month, higher rate limit |
 | Custom | [Contact us](https://pokerdata.io/support) | Redistribution, bulk export, licences for model training, SLAs |

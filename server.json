@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.hft-studio/pokerdata",
   "title": "PokerData",
-  "description": "GTO poker solver data: NLHE/PLO preflop ranges, postflop strategy, EV. 6-max NL preflop free.",
+  "description": "GTO poker solver data: NLHE/PLO preflop ranges, postflop strategy, EV. Free Starter key.",
   "websiteUrl": "https://pokerdata.io/api",
   "icons": [
     {
@@ -25,7 +25,7 @@
       "headers": [
         {
           "name": "Authorization",
-          "description": "Bearer pdk_… API key from https://pokerdata.io/app/api. Optional: without it the tool list and 6-max NL cash preflop tools still work.",
+          "description": "Bearer pdk_… API key from https://pokerdata.io/app/api. Needed for strategy tools (the free Starter key works); without it only the tool list and coverage tools answer.",
           "isRequired": false,
           "isSecret": true
         }
@@ -43,7 +43,7 @@
       "environmentVariables": [
         {
           "name": "POKERDATA_API_KEY",
-          "description": "pdk_ API key from https://pokerdata.io/app/api. Optional: without it the 6-max NL cash preflop tools still work.",
+          "description": "pdk_ API key from https://pokerdata.io/app/api. Needed for strategy tools (the free Starter key works); without it only the tool list and coverage tools answer.",
           "isRequired": false,
           "isSecret": true
         }

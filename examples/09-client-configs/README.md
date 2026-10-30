@@ -1,7 +1,8 @@
 # Claude Desktop, Cursor and Claude Code config
 
-Drop-in configs. Each comes in a keyed version and a free version (no key:
-6-max NL cash preflop plus the coverage and docs tools).
+Drop-in configs. Each comes in a keyed version and a no-key version (the tool
+list and the coverage and docs tools only; strategy tools need a key, and the
+free Starter key works).
 
 | Client | File | Transport |
 |---|---|---|

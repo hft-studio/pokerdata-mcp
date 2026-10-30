@@ -1,7 +1,7 @@
 # BTN open range, 6-max NL 100bb
 
 "What does the button open at 100bb when it folds to them?" Find the spot,
-read the node, then pull the opening range and one mixed hand. Free, no key.
+read the node, then pull the opening range and one mixed hand. Needs a key; the free Starter key works.
 
 Spot names are action paths: `UTG_Fold_HJ_Fold_CO_Fold_BTN` is the BTN's
 decision, and appending the action (`_60%`, a 2.5bb open) names the range.
