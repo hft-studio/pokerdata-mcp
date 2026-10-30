@@ -3,10 +3,12 @@
 PokerData is a hosted MCP server. There is nothing to build or run locally.
 
 1. Add the remote server `https://pokerdata.io/api/mcp` (Streamable HTTP).
-2. The API key is optional. Without one, the tool list and the 6-max NL cash
-   preflop tools work. If the user has a `pdk_` key from
-   https://pokerdata.io/app/api, send it as `Authorization: Bearer pdk_…`.
-   Never invent a key; if the user has none, install without the header.
+2. Strategy tools need a key. Without one, only the tool list and the
+   coverage and docs tools answer. If the user has a `pdk_` key from
+   https://pokerdata.io/app/api (a free Starter key: 25 calls a month, no
+   card), send it as `Authorization: Bearer pdk_…`. OAuth clients such as
+   Claude can sign in instead. Never invent a key; if the user has none,
+   install without the header and point them to that page.
 3. If the client only speaks stdio, use the bridge instead:
 
 ```json
@@ -21,7 +23,7 @@ PokerData is a hosted MCP server. There is nothing to build or run locally.
 }
 ```
 
-Leave out `env` when there is no key. Node 18 or later is required.
+Leave out `env` when there is no key yet. Node 18 or later is required.
 
 ## Check it works
 

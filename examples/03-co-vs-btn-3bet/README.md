@@ -1,7 +1,7 @@
 # CO open vs BTN 3-bet, 6-max NL 100bb
 
 CO opens to 2.5bb, BTN 3-bets to 7.51bb, the blinds fold. What does BTN
-3-bet with, and what does CO do with AQo? Free, no key.
+3-bet with, and what does CO do with AQo? Needs a key; the free Starter key works.
 
 In nodes after the hero has already put money in, EVs are not relative to
 folding at that node: the compact reply shows AQo's fold at `-5` sb (the 2.5bb
