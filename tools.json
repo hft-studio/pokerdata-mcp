@@ -2,8 +2,292 @@
   "source": "https://pokerdata.io/api/mcp (tools/list)",
   "tools": [
     {
+      "name": "get_started",
+      "description": "Onboarding overview of PokerData: the short set of questions that identify a new user's needs (game, format, stakes, goal), a menu of what PokerData can do for each, what is free without a key, and how feature or data requests work. Free, no key needed. Docs: https://docs.pokerdata.io/llm-tools",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "title": "Get started",
+      "annotations": {
+        "title": "Get started",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "Onboarding questions and a menu of what PokerData does.",
+        "properties": {
+          "askTheUser": {
+            "type": "object",
+            "description": "Questions to ask a new user once, briefly.",
+            "properties": {
+              "note": {
+                "type": "string",
+                "description": "How to ask: once, short, never blocking an answer."
+              },
+              "questions": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "description": "One question."
+                },
+                "description": "Game, format, stakes, and goal."
+              }
+            }
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One thing a user can do here.",
+              "properties": {
+                "goal": {
+                  "type": "string",
+                  "description": "What the user wants."
+                },
+                "tools": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "Tool name."
+                  },
+                  "description": "Tools that serve this goal."
+                },
+                "example": {
+                  "type": "string",
+                  "description": "An example question."
+                }
+              }
+            },
+            "description": "What the server can do, grouped by goal."
+          },
+          "access": {
+            "type": "object",
+            "description": "What is free and what needs a key.",
+            "properties": {
+              "free": {
+                "type": "string",
+                "description": "What answers without a key."
+              },
+              "withKey": {
+                "type": "string",
+                "description": "What needs a key, and where to get one."
+              }
+            }
+          },
+          "notCovered": {
+            "type": "string",
+            "description": "Formats that are not covered, and to offer a request instead."
+          },
+          "requests": {
+            "type": "object",
+            "description": "How to file a feature or data request.",
+            "properties": {
+              "tool": {
+                "type": "string",
+                "description": "The MCP tool to call."
+              },
+              "when": {
+                "type": "string",
+                "description": "When to offer one."
+              },
+              "rest": {
+                "type": "string",
+                "description": "The equivalent REST endpoint."
+              }
+            }
+          },
+          "signedIn": {
+            "type": "boolean",
+            "description": "Whether this connection carries a key or a signed-in account."
+          }
+        }
+      }
+    },
+    {
+      "name": "submit_request",
+      "description": "Files a feature request or data request on the user's behalf with the PokerData team. kind \"data\" is missing coverage (a game, format, stack depth, spot, or solve); kind \"feature\" is a missing capability (a tool, filter, export, or endpoint). The user's question is sent to the PokerData team in their own words, with the summary and details, and the team reads every one. Free with any key.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "feature",
+              "data"
+            ],
+            "description": "\"data\" for missing coverage, \"feature\" for a missing capability."
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "One line saying what the user wants, e.g. \"9-max MTT preflop at 25bb with ICM\"."
+          },
+          "question": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "The user's original question that couldn't be answered, verbatim if possible."
+          },
+          "details": {
+            "type": "string",
+            "maxLength": 4000,
+            "description": "Anything else that helps: game, format, stakes, stack depths, positions, how they would use it."
+          }
+        },
+        "required": [
+          "kind",
+          "summary"
+        ],
+        "additionalProperties": false
+      },
+      "title": "File a feature or data request",
+      "annotations": {
+        "title": "File a feature or data request",
+        "readOnlyHint": false,
+        "idempotentHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "The filed request.",
+        "properties": {
+          "request": {
+            "type": "object",
+            "description": "One feature or data request.",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "description": "Request id."
+              },
+              "kind": {
+                "type": "string",
+                "description": "\"feature\" or \"data\"."
+              },
+              "summary": {
+                "type": "string",
+                "description": "One-line summary."
+              },
+              "details": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Extra detail, or null."
+              },
+              "question": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The question that couldn't be answered, or null."
+              },
+              "source": {
+                "type": "string",
+                "description": "\"mcp\" or \"api\"."
+              },
+              "status": {
+                "type": "string",
+                "description": "\"open\" until the team updates it."
+              },
+              "createdAt": {
+                "type": "string",
+                "description": "When it was filed, ISO 8601."
+              }
+            }
+          },
+          "message": {
+            "type": "string",
+            "description": "What happens next, to relay to the user."
+          }
+        }
+      }
+    },
+    {
+      "name": "list_my_requests",
+      "description": "List the feature and data requests this account has filed, newest first, with their status. Free with any key.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Maximum requests to return (default 20, maximum 100)."
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "List my requests",
+      "annotations": {
+        "title": "List my requests",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "This account's requests, newest first.",
+        "properties": {
+          "requests": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One feature or data request.",
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "description": "Request id."
+                },
+                "kind": {
+                  "type": "string",
+                  "description": "\"feature\" or \"data\"."
+                },
+                "summary": {
+                  "type": "string",
+                  "description": "One-line summary."
+                },
+                "details": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Extra detail, or null."
+                },
+                "question": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The question that couldn't be answered, or null."
+                },
+                "source": {
+                  "type": "string",
+                  "description": "\"mcp\" or \"api\"."
+                },
+                "status": {
+                  "type": "string",
+                  "description": "\"open\" until the team updates it."
+                },
+                "createdAt": {
+                  "type": "string",
+                  "description": "When it was filed, ISO 8601."
+                }
+              }
+            },
+            "description": "Filed requests."
+          }
+        }
+      }
+    },
+    {
       "name": "list_games",
-      "description": "Discover covered stack depths and positions. Call this before low-level preflop queries. \"nl\" = no-limit hold'em 6-max cash (169-grid hands, per-hand EV in small blinds), \"nl9\" = no-limit hold'em 9-max cash, \"nlmtt8\" = no-limit hold'em 8-max MTT chip-EV (10–300bb, 1bb BB-ante; Fold/Call/Limp/AI/Open/3B tokens), \"nlh8-hydra\" = no-limit hold'em 8-max MTT chip-EV with a classic 0.1bb ante from every seat (10, 20, 30, 60bb; same tokens as nlmtt8), \"plo\" = pot-limit Omaha 6-max cash (4-card), \"plo5\" = pot-limit Omaha 5-card 6-max (100bb, 1.2bb ante), \"plo9\" = pot-limit Omaha 9-max cash, \"plo6hu\" = 6-card Omaha heads-up (BTN vs BB, 100bb). Cash trees are not tournament, ICM, PKO, or satellite solves. nlmtt8 is chip-EV only.",
+      "description": "Lists the covered preflop games with their stack depths and positions. \"nl\" = no-limit hold'em 6-max cash (169-grid hands, per-hand EV in small blinds), \"nl9\" = no-limit hold'em 9-max cash, \"nlmtt8\" = no-limit hold'em 8-max MTT chip-EV (10–300bb, 1bb BB-ante; Fold/Call/Limp/AI/Open/3B tokens), \"nlh8-hydra\" = no-limit hold'em 8-max MTT chip-EV with a classic 0.1bb ante from every seat (10, 20, 30, 60bb; same tokens as nlmtt8), \"nlh8-icm\" = no-limit hold'em 8-max MTT with ICM: one stack table per scenario (near the money, 33 or 35 left of 200, 30 paid; final table, 8 left), uneven stacks, 0.125bb ante from every seat, EVs in tournament dollars; pass scenario (the games catalog lists them; stack alone works only where one table has that depth); decision nodes only, \"nlhu\" = no-limit hold'em heads-up for the title, chip-EV, both players at the stack (1–40bb), 0.125bb ante each, SB on the button; decision nodes only, \"plo\" = pot-limit Omaha 6-max cash (4-card), \"plo5\" = pot-limit Omaha 5-card 6-max (100bb, 1.2bb ante), \"plo9\" = pot-limit Omaha 9-max cash, \"plo4hu\" = pot-limit Omaha 4-card heads-up cash (SB vs BB at 10bb, 20bb, 30bb, 40bb, 50bb, 75bb, 100bb or 200bb, limps allowed, 4.5% rake capped at 0.045bb; history starts \"SB\"), \"plo6hu\" = 6-card Omaha heads-up (BTN vs BB, 100bb). Cash trees are not tournament, ICM, PKO, or satellite solves. nlmtt8, nlh8-hydra and nlhu are chip-EV; only nlh8-icm is ICM.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -144,12 +428,15 @@
               "nl9",
               "nlmtt8",
               "nlh8-hydra",
+              "nlh8-icm",
+              "nlhu",
               "plo",
               "plo5",
               "plo9",
+              "plo4hu",
               "plo6hu"
             ],
-            "description": "\"nl\" = no-limit hold'em 6-max cash (169-grid hands, per-hand EV in small blinds), \"nl9\" = no-limit hold'em 9-max cash, \"nlmtt8\" = no-limit hold'em 8-max MTT chip-EV (10–300bb, 1bb BB-ante; Fold/Call/Limp/AI/Open/3B tokens), \"nlh8-hydra\" = no-limit hold'em 8-max MTT chip-EV with a classic 0.1bb ante from every seat (10, 20, 30, 60bb; same tokens as nlmtt8), \"plo\" = pot-limit Omaha 6-max cash (4-card), \"plo5\" = pot-limit Omaha 5-card 6-max (100bb, 1.2bb ante), \"plo9\" = pot-limit Omaha 9-max cash, \"plo6hu\" = 6-card Omaha heads-up (BTN vs BB, 100bb). Cash trees are not tournament, ICM, PKO, or satellite solves. nlmtt8 is chip-EV only."
+            "description": "\"nl\" = no-limit hold'em 6-max cash (169-grid hands, per-hand EV in small blinds), \"nl9\" = no-limit hold'em 9-max cash, \"nlmtt8\" = no-limit hold'em 8-max MTT chip-EV (10–300bb, 1bb BB-ante; Fold/Call/Limp/AI/Open/3B tokens), \"nlh8-hydra\" = no-limit hold'em 8-max MTT chip-EV with a classic 0.1bb ante from every seat (10, 20, 30, 60bb; same tokens as nlmtt8), \"nlh8-icm\" = no-limit hold'em 8-max MTT with ICM: one stack table per scenario (near the money, 33 or 35 left of 200, 30 paid; final table, 8 left), uneven stacks, 0.125bb ante from every seat, EVs in tournament dollars; pass scenario (the games catalog lists them; stack alone works only where one table has that depth); decision nodes only, \"nlhu\" = no-limit hold'em heads-up for the title, chip-EV, both players at the stack (1–40bb), 0.125bb ante each, SB on the button; decision nodes only, \"plo\" = pot-limit Omaha 6-max cash (4-card), \"plo5\" = pot-limit Omaha 5-card 6-max (100bb, 1.2bb ante), \"plo9\" = pot-limit Omaha 9-max cash, \"plo4hu\" = pot-limit Omaha 4-card heads-up cash (SB vs BB at 10bb, 20bb, 30bb, 40bb, 50bb, 75bb, 100bb or 200bb, limps allowed, 4.5% rake capped at 0.045bb; history starts \"SB\"), \"plo6hu\" = 6-card Omaha heads-up (BTN vs BB, 100bb). Cash trees are not tournament, ICM, PKO, or satellite solves. nlmtt8, nlh8-hydra and nlhu are chip-EV; only nlh8-icm is ICM."
           },
           "stack": {
             "type": "number",
@@ -161,7 +448,7 @@
           },
           "hand": {
             "type": "string",
-            "description": "Optional hand/class, e.g. AKs or (KA)(KA)"
+            "description": "Optional hand/class, e.g. AKs; for 4-card PLO either cards (AsJsAhJh) or a class with suited cards in parentheses ((JA)(JA))"
           },
           "minFreq": {
             "type": "number",
@@ -363,16 +650,23 @@
               "nl9",
               "nlmtt8",
               "nlh8-hydra",
+              "nlh8-icm",
+              "nlhu",
               "plo",
               "plo5",
               "plo9",
+              "plo4hu",
               "plo6hu"
             ],
-            "description": "\"nl\" = no-limit hold'em 6-max cash (169-grid hands, per-hand EV in small blinds), \"nl9\" = no-limit hold'em 9-max cash, \"nlmtt8\" = no-limit hold'em 8-max MTT chip-EV (10–300bb, 1bb BB-ante; Fold/Call/Limp/AI/Open/3B tokens), \"nlh8-hydra\" = no-limit hold'em 8-max MTT chip-EV with a classic 0.1bb ante from every seat (10, 20, 30, 60bb; same tokens as nlmtt8), \"plo\" = pot-limit Omaha 6-max cash (4-card), \"plo5\" = pot-limit Omaha 5-card 6-max (100bb, 1.2bb ante), \"plo9\" = pot-limit Omaha 9-max cash, \"plo6hu\" = 6-card Omaha heads-up (BTN vs BB, 100bb). Cash trees are not tournament, ICM, PKO, or satellite solves. nlmtt8 is chip-EV only."
+            "description": "\"nl\" = no-limit hold'em 6-max cash (169-grid hands, per-hand EV in small blinds), \"nl9\" = no-limit hold'em 9-max cash, \"nlmtt8\" = no-limit hold'em 8-max MTT chip-EV (10–300bb, 1bb BB-ante; Fold/Call/Limp/AI/Open/3B tokens), \"nlh8-hydra\" = no-limit hold'em 8-max MTT chip-EV with a classic 0.1bb ante from every seat (10, 20, 30, 60bb; same tokens as nlmtt8), \"nlh8-icm\" = no-limit hold'em 8-max MTT with ICM: one stack table per scenario (near the money, 33 or 35 left of 200, 30 paid; final table, 8 left), uneven stacks, 0.125bb ante from every seat, EVs in tournament dollars; pass scenario (the games catalog lists them; stack alone works only where one table has that depth); decision nodes only, \"nlhu\" = no-limit hold'em heads-up for the title, chip-EV, both players at the stack (1–40bb), 0.125bb ante each, SB on the button; decision nodes only, \"plo\" = pot-limit Omaha 6-max cash (4-card), \"plo5\" = pot-limit Omaha 5-card 6-max (100bb, 1.2bb ante), \"plo9\" = pot-limit Omaha 9-max cash, \"plo4hu\" = pot-limit Omaha 4-card heads-up cash (SB vs BB at 10bb, 20bb, 30bb, 40bb, 50bb, 75bb, 100bb or 200bb, limps allowed, 4.5% rake capped at 0.045bb; history starts \"SB\"), \"plo6hu\" = 6-card Omaha heads-up (BTN vs BB, 100bb). Cash trees are not tournament, ICM, PKO, or satellite solves. nlmtt8, nlh8-hydra and nlhu are chip-EV; only nlh8-icm is ICM."
           },
           "stack": {
             "type": "number",
             "description": "Stack depth in big blinds"
+          },
+          "scenario": {
+            "type": "string",
+            "description": "nlh8-icm only: the stack table, e.g. \"33left-avg40-big-btn\" (list_games lists them). Needed when several tables share the stack."
           },
           "history": {
             "type": "string",
@@ -380,7 +674,7 @@
           },
           "hand": {
             "type": "string",
-            "description": "Optional hand/class"
+            "description": "Optional hand/class, e.g. AKs; for 4-card PLO either cards (AsJsAhJh) or a class with suited cards in parentheses ((JA)(JA))"
           },
           "minFreq": {
             "type": "number",
@@ -550,12 +844,15 @@
               "nl9",
               "nlmtt8",
               "nlh8-hydra",
+              "nlh8-icm",
+              "nlhu",
               "plo",
               "plo5",
               "plo9",
+              "plo4hu",
               "plo6hu"
             ],
-            "description": "\"nl\" = no-limit hold'em 6-max cash (169-grid hands, per-hand EV in small blinds), \"nl9\" = no-limit hold'em 9-max cash, \"nlmtt8\" = no-limit hold'em 8-max MTT chip-EV (10–300bb, 1bb BB-ante; Fold/Call/Limp/AI/Open/3B tokens), \"nlh8-hydra\" = no-limit hold'em 8-max MTT chip-EV with a classic 0.1bb ante from every seat (10, 20, 30, 60bb; same tokens as nlmtt8), \"plo\" = pot-limit Omaha 6-max cash (4-card), \"plo5\" = pot-limit Omaha 5-card 6-max (100bb, 1.2bb ante), \"plo9\" = pot-limit Omaha 9-max cash, \"plo6hu\" = 6-card Omaha heads-up (BTN vs BB, 100bb). Cash trees are not tournament, ICM, PKO, or satellite solves. nlmtt8 is chip-EV only."
+            "description": "\"nl\" = no-limit hold'em 6-max cash (169-grid hands, per-hand EV in small blinds), \"nl9\" = no-limit hold'em 9-max cash, \"nlmtt8\" = no-limit hold'em 8-max MTT chip-EV (10–300bb, 1bb BB-ante; Fold/Call/Limp/AI/Open/3B tokens), \"nlh8-hydra\" = no-limit hold'em 8-max MTT chip-EV with a classic 0.1bb ante from every seat (10, 20, 30, 60bb; same tokens as nlmtt8), \"nlh8-icm\" = no-limit hold'em 8-max MTT with ICM: one stack table per scenario (near the money, 33 or 35 left of 200, 30 paid; final table, 8 left), uneven stacks, 0.125bb ante from every seat, EVs in tournament dollars; pass scenario (the games catalog lists them; stack alone works only where one table has that depth); decision nodes only, \"nlhu\" = no-limit hold'em heads-up for the title, chip-EV, both players at the stack (1–40bb), 0.125bb ante each, SB on the button; decision nodes only, \"plo\" = pot-limit Omaha 6-max cash (4-card), \"plo5\" = pot-limit Omaha 5-card 6-max (100bb, 1.2bb ante), \"plo9\" = pot-limit Omaha 9-max cash, \"plo4hu\" = pot-limit Omaha 4-card heads-up cash (SB vs BB at 10bb, 20bb, 30bb, 40bb, 50bb, 75bb, 100bb or 200bb, limps allowed, 4.5% rake capped at 0.045bb; history starts \"SB\"), \"plo6hu\" = 6-card Omaha heads-up (BTN vs BB, 100bb). Cash trees are not tournament, ICM, PKO, or satellite solves. nlmtt8, nlh8-hydra and nlhu are chip-EV; only nlh8-icm is ICM."
           },
           "stack": {
             "type": "number",
@@ -661,7 +958,7 @@
     },
     {
       "name": "list_spots",
-      "description": "Search valid decision nodes for a stack depth, tagged by depth (1 = RFI, 2 = vs open, 3 = 3-bet pots, …). Compact mode is paginated; use depth, contains, and offset to narrow results without loading thousands of paths. plo9 has no spot index: walk it with get_node from history \"UTG\".",
+      "description": "Search valid decision nodes for a stack depth, tagged by depth (1 = RFI, 2 = vs open, 3 = 3-bet pots, …). Compact mode is paginated; depth, contains, and offset narrow the results. plo9 has no spot index; its decision nodes start from history \"UTG\".",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -672,12 +969,15 @@
               "nl9",
               "nlmtt8",
               "nlh8-hydra",
+              "nlh8-icm",
+              "nlhu",
               "plo",
               "plo5",
               "plo9",
+              "plo4hu",
               "plo6hu"
             ],
-            "description": "\"nl\" = no-limit hold'em 6-max cash (169-grid hands, per-hand EV in small blinds), \"nl9\" = no-limit hold'em 9-max cash, \"nlmtt8\" = no-limit hold'em 8-max MTT chip-EV (10–300bb, 1bb BB-ante; Fold/Call/Limp/AI/Open/3B tokens), \"nlh8-hydra\" = no-limit hold'em 8-max MTT chip-EV with a classic 0.1bb ante from every seat (10, 20, 30, 60bb; same tokens as nlmtt8), \"plo\" = pot-limit Omaha 6-max cash (4-card), \"plo5\" = pot-limit Omaha 5-card 6-max (100bb, 1.2bb ante), \"plo9\" = pot-limit Omaha 9-max cash, \"plo6hu\" = 6-card Omaha heads-up (BTN vs BB, 100bb). Cash trees are not tournament, ICM, PKO, or satellite solves. nlmtt8 is chip-EV only."
+            "description": "\"nl\" = no-limit hold'em 6-max cash (169-grid hands, per-hand EV in small blinds), \"nl9\" = no-limit hold'em 9-max cash, \"nlmtt8\" = no-limit hold'em 8-max MTT chip-EV (10–300bb, 1bb BB-ante; Fold/Call/Limp/AI/Open/3B tokens), \"nlh8-hydra\" = no-limit hold'em 8-max MTT chip-EV with a classic 0.1bb ante from every seat (10, 20, 30, 60bb; same tokens as nlmtt8), \"nlh8-icm\" = no-limit hold'em 8-max MTT with ICM: one stack table per scenario (near the money, 33 or 35 left of 200, 30 paid; final table, 8 left), uneven stacks, 0.125bb ante from every seat, EVs in tournament dollars; pass scenario (the games catalog lists them; stack alone works only where one table has that depth); decision nodes only, \"nlhu\" = no-limit hold'em heads-up for the title, chip-EV, both players at the stack (1–40bb), 0.125bb ante each, SB on the button; decision nodes only, \"plo\" = pot-limit Omaha 6-max cash (4-card), \"plo5\" = pot-limit Omaha 5-card 6-max (100bb, 1.2bb ante), \"plo9\" = pot-limit Omaha 9-max cash, \"plo4hu\" = pot-limit Omaha 4-card heads-up cash (SB vs BB at 10bb, 20bb, 30bb, 40bb, 50bb, 75bb, 100bb or 200bb, limps allowed, 4.5% rake capped at 0.045bb; history starts \"SB\"), \"plo6hu\" = 6-card Omaha heads-up (BTN vs BB, 100bb). Cash trees are not tournament, ICM, PKO, or satellite solves. nlmtt8, nlh8-hydra and nlhu are chip-EV; only nlh8-icm is ICM."
           },
           "stack": {
             "type": "number",
@@ -788,7 +1088,7 @@
     },
     {
       "name": "list_postflop_packs",
-      "description": "Every solved postflop pack: preflop line, positions (OOP vs IP), stack, pot, the bet-size trees it is solved under, and the solved boards. Boards use the spaced form (\"3h 3d 2s\"). NLHE packs list `sizingTrees`: \"75\" (75% pot every street, the pack id itself) and \"33\" (33% pot on the flop, then 75%, under the `<pack>-flop33` id); every postflop tool accepts either tree's packId. PLO5 packs (ids starting plo5-) solve one 33% flop tree, flop decisions only. Compact output lists board names per pack. Pass `pack` (the 75% id or the -flop33 id) for that tree's per-board detail and per-flop exploitability where the index publishes a number. Missing exploitability is omitted, never estimated. Pass `variant` to list only NLHE or PLO5 packs. Call this before get_postflop_node.",
+      "description": "Every solved postflop pack: preflop line, positions (OOP vs IP), stack, pot, the bet-size trees it is solved under, and the solved boards. Boards use the spaced form (\"3h 3d 2s\"). NLHE packs list `sizingTrees`: \"75\" (75% pot every street, the pack id itself) and \"33\" (33% pot on the flop, then 75%, under the `<pack>-flop33` id); every postflop tool accepts either tree's packId. PLO5 packs (ids starting plo5-) solve one 33% flop tree, flop decisions only. Compact output lists board names per pack. Pass `pack` (the 75% id or the -flop33 id) for that tree's per-board detail and per-flop exploitability where the index publishes a number. Missing exploitability is omitted, never estimated. Pass `variant` to list only NLHE or PLO5 packs. The returned pack ids and boards are the valid inputs for the postflop tools.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -955,6 +1255,10 @@
                           "queryable": {
                             "type": "boolean",
                             "description": "Whether nodes can be walked."
+                          },
+                          "flopOnly": {
+                            "type": "boolean",
+                            "description": "Only flop decisions are served for this board; turn and river paths are not."
                           },
                           "actionEv": {
                             "type": "object",
@@ -1254,8 +1558,309 @@
       }
     },
     {
+      "name": "get_hu_plo_flop",
+      "description": "Heads-up PLO4 (pot-limit Omaha, four cards) flop strategy from the blueprint, at 10, 20, 30, 40, 50, 75, 100 or 200bb, for any of the 22,100 flops (any suits or card order). Returns the acting player's range-wide action mix and EV, how the other player's range answers each action, and, with `hand`, that four-card hand's action mix, EV and percentile in the range. BB acts first on the flop. Walk deeper by passing a returned nextLines value as `line`. Flop only: turn and river are not in the blueprint. Preflop heads-up PLO4 is the \"plo4hu\" preflop game.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "stack": {
+            "type": "number",
+            "enum": [
+              10,
+              20,
+              30,
+              40,
+              50,
+              75,
+              100,
+              200
+            ],
+            "description": "Effective stack in big blinds"
+          },
+          "flop": {
+            "type": "string",
+            "description": "Flop in spaced form, e.g. \"Ah 7d 2c\""
+          },
+          "preflop": {
+            "type": "string",
+            "description": "Preflop line that reached the flop (default \"SB_Open_BB_Call\"). Others include \"SB_Limp_BB_Check\" and \"SB_Limp_BB_Open_SB_Call\"; a wrong value lists them."
+          },
+          "line": {
+            "type": "string",
+            "description": "Flop actions before the decision, joined with \"_\", e.g. \"BB_Check\" or \"BB_Check_SB_Bet50\". Empty or omitted for the first decision."
+          },
+          "hand": {
+            "type": "string",
+            "description": "Optional exact four-card hand, e.g. AsKsQhJh"
+          }
+        },
+        "required": [
+          "stack",
+          "flop"
+        ],
+        "additionalProperties": false
+      },
+      "title": "Get heads-up PLO4 flop strategy",
+      "annotations": {
+        "title": "Get heads-up PLO4 flop strategy",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "One heads-up PLO4 flop decision from the blueprint: the actor's range-wide action mix and EV, and one hand's strategy.",
+        "properties": {
+          "game": {
+            "type": "string",
+            "description": "\"plo4hu\"."
+          },
+          "stackBb": {
+            "type": "number",
+            "description": "Effective stack in big blinds."
+          },
+          "flop": {
+            "type": "string",
+            "description": "Flop as asked."
+          },
+          "solvedAs": {
+            "type": "object",
+            "description": "Present when the stored flop differs in suits or card order; every card in the answer is in your suits."
+          },
+          "preflop": {
+            "type": "string",
+            "description": "Preflop line, e.g. \"SB_Open_BB_Call\"."
+          },
+          "line": {
+            "type": "string",
+            "description": "Flop actions before this decision, e.g. \"BB_Check\"; \"\" is the first decision."
+          },
+          "actor": {
+            "type": "string",
+            "description": "\"SB\" or \"BB\"."
+          },
+          "potBb": {
+            "type": "number",
+            "description": "Pot before this decision, in big blinds."
+          },
+          "toCallBb": {
+            "type": "number",
+            "description": "Amount to call, in big blinds."
+          },
+          "range": {
+            "type": "object",
+            "description": "The actor's whole range at this decision.",
+            "properties": {
+              "groupsReaching": {
+                "type": "integer",
+                "description": "Hand groups with weight here."
+              },
+              "actions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "description": "One action.",
+                  "properties": {
+                    "action": {
+                      "type": "string",
+                      "description": "Action label, e.g. Check, Bet50, Raise100, AI."
+                    },
+                    "frequency": {
+                      "type": "number",
+                      "description": "Range-wide frequency from 0 to 1."
+                    },
+                    "avgEvBb": {
+                      "type": [
+                        "number",
+                        "null"
+                      ],
+                      "description": "Range-weighted EV in bb, or null."
+                    }
+                  }
+                },
+                "description": "Every legal action."
+              }
+            }
+          },
+          "hand": {
+            "type": "object",
+            "description": "The asked hand: its group, whether it reaches this decision, per-action frequency and EV in bb, and rangePercentile (0-100: the share of the actor's range with a lower EV here)."
+          },
+          "responses": {
+            "type": "object",
+            "description": "For each action, how the other player's range answers it: action label to range-wide frequency at the next decision."
+          },
+          "units": {
+            "type": "string",
+            "description": "What the EV numbers mean."
+          },
+          "nextLines": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "A line to pass as `line` next."
+            },
+            "description": "Decisions that follow this one."
+          },
+          "source": {
+            "type": "string",
+            "description": "Where the numbers come from."
+          },
+          "error": {
+            "type": "string",
+            "description": "Present instead of a payload when the request named something that does not exist. No figure is estimated in its place."
+          },
+          "preflopLines": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "A preflop line."
+            },
+            "description": "On a preflop error: the lines that reach the flop."
+          },
+          "flopLines": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "A flop line."
+            },
+            "description": "On a line error: the flop decisions after this preflop line."
+          }
+        }
+      }
+    },
+    {
+      "name": "analyze_hu_plo_hand",
+      "description": "One heads-up PLO4 hand, as played, against the flop blueprint in one call: every flop decision mapped onto the blueprint tree (sizes to the nearest blueprint size), and for each of the hero's decisions the best action, every action's EV for the exact hand, the loss of the action played (bb and % of pot), whether it counts as a mistake, the hand's percentile in its range and the opponent's response to each action. Pass `hand` exactly as pokerstudy.ai's get_hand returns it in `raw.hand` (players with startingStack and cards; actions with street, actionType and amount, raises as \"raise to\") and `hero` (raw.hero). The stack is matched to the nearest blueprint depth. When this exact turn spot has been solved, `turnDecisions` gives the same answers for every turn decision; otherwise pass solve_turn: true to queue a GPU solve of it (about 2 to 4 minutes) and call again. Rivers work the same way: when the turn is solved and the hand reached the river, `riverDecisions` gives every river decision from an exact river solve that starts from the turn solve's own river ranges, and solve_turn: true queues that solve when it is missing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "hand": {
+            "type": "object",
+            "description": "Parsed hand: { bigBlind, players: [{ playerName, startingStack, cards }], actions: [{ playerName, actionType, amount, street }], communityCards }."
+          },
+          "hero": {
+            "type": "string",
+            "description": "Hero's player name in the hand."
+          },
+          "mistake_bb": {
+            "type": "number",
+            "description": "Loss in bb above which a decision counts as a mistake (default 0.1)."
+          },
+          "solve_turn": {
+            "type": "boolean",
+            "description": "When the hand's turn (or, once the turn is solved, river) spot is not solved yet, queue a solve for it (about 2 to 4 minutes; call again for the decisions)."
+          }
+        },
+        "required": [
+          "hand",
+          "hero"
+        ],
+        "additionalProperties": false
+      },
+      "title": "Analyze a heads-up PLO4 hand",
+      "annotations": {
+        "title": "Analyze a heads-up PLO4 hand",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "One heads-up PLO4 hand against the flop blueprint: every flop decision, and for the hero's the best action, EVs, loss and mistake flag.",
+        "properties": {
+          "game": {
+            "type": "string",
+            "description": "\"plo4hu\"."
+          },
+          "handId": {
+            "type": "string",
+            "description": "Hand id when the input had one."
+          },
+          "hero": {
+            "type": "string",
+            "description": "Hero's player name."
+          },
+          "heroPos": {
+            "type": "string",
+            "description": "\"SB\" or \"BB\"."
+          },
+          "heroCards": {
+            "type": "string",
+            "description": "Hero's four cards."
+          },
+          "effectiveStackBb": {
+            "type": "number",
+            "description": "Effective stack in the hand, in big blinds."
+          },
+          "stack": {
+            "type": "number",
+            "description": "Blueprint depth used (nearest to the effective stack)."
+          },
+          "preflop": {
+            "type": "string",
+            "description": "Preflop line in blueprint names, e.g. \"SB_Open_BB_Call\"."
+          },
+          "flop": {
+            "type": "string",
+            "description": "Flop in spaced form."
+          },
+          "decisions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One flop decision: line, actor, played, mappedTo, potBb, rangeStrategy; for the hero also handStrategy, handEvBb, best, evLossBb, evLossPctPot, mistake, rangePercentile, opponentResponses (or reaches: false)."
+            },
+            "description": "Flop decisions in order."
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "A note on how the hand was mapped."
+            },
+            "description": "Mapping notes."
+          },
+          "turn": {
+            "type": "object",
+            "description": "When the hand saw a turn: the spot (stack, preflop, flopLine, board, potBb, behindBb, turn sizes), spotId, whether it is solved, and `solve` when a solve was queued."
+          },
+          "turnDecisions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One turn decision from the solve of this spot, in the same shape as a flop decision."
+            },
+            "description": "Turn decisions in order, when the spot is solved."
+          },
+          "river": {
+            "type": "object",
+            "description": "When the turn is solved and the hand saw a river: the river spot (turnSpot, turnLine, card, potBb, behindBb, riverBets), spotId, whether it is solved, and `solve` when a solve was queued."
+          },
+          "riverDecisions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One river decision from the exact river solve, in the same shape as a flop decision."
+            },
+            "description": "River decisions in order, when the river spot is solved."
+          },
+          "units": {
+            "type": "string",
+            "description": "What the EV numbers mean."
+          },
+          "error": {
+            "type": "string",
+            "description": "Present instead of a payload when the request named something that does not exist. No figure is estimated in its place."
+          }
+        }
+      }
+    },
+    {
       "name": "explain_combo",
-      "description": "Preferred tool for exact NLHE postflop hand questions. Returns a canonical context, exact action mix, action EV/loss when available, made-hand and draw classification, blocker facts, and same-rank-class suit comparisons. The server computes evidence; the agent should phrase causality as interpretation.",
+      "description": "Explains one exact NLHE postflop combo at a solved node. Returns a canonical context, the exact action mix, action EV/loss when available, made-hand and draw classification, blocker facts, and same-rank-class suit comparisons. The output is computed evidence; it does not state why the solver chose an action.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1418,7 +2023,7 @@
     },
     {
       "name": "get_board_report",
-      "description": "Preferred tool for board-texture heuristics. Aggregates action frequencies and range/action composition across solved boards in one postflop pack. Results explicitly report sample breadth and use equal weight per board.",
+      "description": "Board-texture report. Aggregates action frequencies and range/action composition across solved boards in one postflop pack. Results explicitly report sample breadth and use equal weight per board.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1643,7 +2248,7 @@
     },
     {
       "name": "compare_strategies",
-      "description": "Preferred tool for differences between two preflop or postflop contexts. The server fetches both strategies and returns action-frequency/EV deltas plus the largest postflop combo changes, avoiding two large node payloads.",
+      "description": "Compares two preflop or postflop contexts. Fetches both strategies server-side and returns action-frequency/EV deltas plus the largest postflop combo changes in one compact payload.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1666,9 +2271,12 @@
                   "nl9",
                   "nlmtt8",
                   "nlh8-hydra",
+                  "nlh8-icm",
+                  "nlhu",
                   "plo",
                   "plo5",
                   "plo9",
+                  "plo4hu",
                   "plo6hu"
                 ],
                 "description": "Preflop only. Both sides must name the same game."
@@ -1683,7 +2291,7 @@
               },
               "hand": {
                 "type": "string",
-                "description": "Preflop only. One hand or class, e.g. AKs. Provide it in both contexts or neither; PLO comparisons require it."
+                "description": "Preflop only. One hand or class, e.g. AKs, or for 4-card PLO cards like AsJsAhJh or a class like (JA)(JA). Provide it in both contexts or neither; PLO comparisons require it."
               },
               "pack": {
                 "type": "string",
@@ -1718,9 +2326,12 @@
                   "nl9",
                   "nlmtt8",
                   "nlh8-hydra",
+                  "nlh8-icm",
+                  "nlhu",
                   "plo",
                   "plo5",
                   "plo9",
+                  "plo4hu",
                   "plo6hu"
                 ],
                 "description": "Preflop only. Both sides must name the same game."
@@ -1735,7 +2346,7 @@
               },
               "hand": {
                 "type": "string",
-                "description": "Preflop only. One hand or class, e.g. AKs. Provide it in both contexts or neither; PLO comparisons require it."
+                "description": "Preflop only. One hand or class, e.g. AKs, or for 4-card PLO cards like AsJsAhJh or a class like (JA)(JA). Provide it in both contexts or neither; PLO comparisons require it."
               },
               "pack": {
                 "type": "string",
@@ -1994,7 +2605,7 @@
         "properties": {
           "dataset": {
             "type": "string",
-            "description": "Dataset id from list_datasets, e.g. \"nl/v2\", \"nl9\", \"nlmtt8\", \"plo\", \"plo9\", \"plo5\", \"plo6hu\"."
+            "description": "Dataset id from list_datasets, e.g. \"nl/v2\", \"nl9\", \"nlmtt8\", \"plo\", \"plo9\", \"plo5\", \"plo4hu\", \"plo6hu\"."
           }
         },
         "required": [
@@ -2159,7 +2770,7 @@
         "properties": {
           "game": {
             "type": "string",
-            "description": "Preflop game id, e.g. \"nl\", \"nl9\", \"nlmtt8\", \"nlh8-hydra\", \"plo\", \"plo9\", \"plo5\", \"plo6hu\"."
+            "description": "Preflop game id, e.g. \"nl\", \"nl9\", \"nlmtt8\", \"nlh8-hydra\", \"plo\", \"plo9\", \"plo5\", \"plo4hu\", \"plo6hu\"."
           },
           "stack": {
             "type": "number",
@@ -2306,81 +2917,6 @@
           "error": {
             "type": "string",
             "description": "Present instead of a payload when the request named something that does not exist. No figure is estimated in its place."
-          }
-        }
-      }
-    },
-    {
-      "name": "get_exploitability",
-      "description": "Preflop exploitability for a game. No preflop dataset publishes exploitability, convergence, or iteration counts. The answer is not available; this tool never fills in a number.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "game": {
-            "type": "string",
-            "description": "Preflop game id to report on, e.g. \"nl\" or \"nlmtt8\". Any known game answers \"not available\"."
-          }
-        },
-        "required": [
-          "game"
-        ],
-        "additionalProperties": false
-      },
-      "title": "Get preflop exploitability",
-      "annotations": {
-        "title": "Get preflop exploitability",
-        "readOnlyHint": true,
-        "idempotentHint": true,
-        "destructiveHint": false,
-        "openWorldHint": false
-      },
-      "outputSchema": {
-        "type": "object",
-        "description": "Preflop exploitability for one game. No preflop dataset publishes one, so the answer is always unavailable and never a number.",
-        "properties": {
-          "game": {
-            "type": "string",
-            "description": "Game id, echoed."
-          },
-          "dataset": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Dataset the game maps to, or null when unknown."
-          },
-          "available": {
-            "type": "boolean",
-            "description": "Always false."
-          },
-          "status": {
-            "type": "string",
-            "description": "Always \"not available\"."
-          },
-          "exploitability": {
-            "type": [
-              "number",
-              "null"
-            ],
-            "description": "Always null: no figure is published or estimated."
-          },
-          "iterations": {
-            "type": [
-              "number",
-              "null"
-            ],
-            "description": "Always null."
-          },
-          "convergence": {
-            "type": [
-              "number",
-              "null"
-            ],
-            "description": "Always null."
-          },
-          "reason": {
-            "type": "string",
-            "description": "Why no number is returned."
           }
         }
       }
@@ -2558,7 +3094,7 @@
     },
     {
       "name": "find_hands",
-      "description": "Find hands the account has uploaded. Returns hand_id, session_id, handAt, position, cards, game, board, potType, street lines, and netBb. Solver grade buckets are not filled. If this account has no hands, offer the hosted upload page from get_upload_link (https://pokerdata.io/upload) instead of asking the user to paste histories into chat.",
+      "description": "Find hands the account has uploaded. Returns hand_id, session_id, handAt, position, cards, game, board, potType, street lines, and netBb. Reads only hands this account uploaded. Docs: https://docs.pokerdata.io/llm-tools#hosted-mcp",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3195,42 +3731,6 @@
             ],
             "description": "Hand-level filters, all optional."
           },
-          "gto_vs_3bet_bucket": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "solver_default",
-                  "mixer",
-                  "freq0",
-                  "no_reach",
-                  "unmapped"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Solver grade bucket for hero's action vs a 3-bet. Grades are not computed, so any value matches nothing rather than inventing a frequency."
-          },
-          "gto_plo5_rfi_bucket": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "solver_default",
-                  "mixer",
-                  "freq0",
-                  "no_reach",
-                  "unmapped"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Solver grade bucket for PLO5 raise-first-in. Grades are not computed, so any value matches nothing."
-          },
           "sort": {
             "type": "string",
             "enum": [
@@ -3383,24 +3883,6 @@
                     "null"
                   ],
                   "description": "Hero's action facing a 3-bet: \"fold\", \"call\", or \"raise\"."
-                },
-                "gto_vs_3bet_bucket": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "description": "Solver grade bucket. Not filled: grades are not computed."
-                },
-                "gto_plo5_rfi_bucket": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "description": "Solver grade bucket. Not filled: grades are not computed."
-                },
-                "gto_status": {
-                  "type": "string",
-                  "description": "Always \"not_graded\": no solver frequency is attached to uploaded hands."
                 }
               }
             },
@@ -3414,14 +3896,6 @@
             "type": "integer",
             "description": "Hands in this response."
           },
-          "gto": {
-            "type": "string",
-            "description": "Always \"not graded\": solver grades are not attached."
-          },
-          "gtoNote": {
-            "type": "string",
-            "description": "Why a solver-grade filter matches nothing."
-          },
           "hint": {
             "type": "string",
             "description": "Where to upload hands when the account has none."
@@ -3431,7 +3905,7 @@
     },
     {
       "name": "get_hand_results",
-      "description": "Per-hand cumulative results for a winnings curve. `points` is [{ hand, bb }], oldest to newest, downsampled. Pass session_id for one session. If this account has no hands, offer the hosted upload page from get_upload_link (https://pokerdata.io/upload) instead of asking the user to paste histories into chat.",
+      "description": "Per-hand cumulative results for a winnings curve. `points` is [{ hand, bb }], oldest to newest, downsampled. Pass session_id for one session. Reads only hands this account uploaded. Docs: https://docs.pokerdata.io/llm-tools#hosted-mcp",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3508,7 +3982,7 @@
     },
     {
       "name": "get_session_summary",
-      "description": "One uploaded session's headline numbers: hero, game type, start and end times, hands played, net result in big blinds, and HUD rates (VPIP, PFR, 3-bet, open limp) as percentages with the sample size. Use it after list_my_sessions to report how a session went; use get_hand_results for its winnings curve and find_hands for individual hands. Returns an error for an unknown session id. Any key works, free trial included, and it never counts against the allowance. If this account has no hands, offer the hosted upload page from get_upload_link (https://pokerdata.io/upload) instead of asking the user to paste histories into chat.",
+      "description": "One uploaded session's headline numbers: hero, game type, start and end times, hands played, net result in big blinds, and HUD rates (VPIP, PFR, 3-bet, open limp) as percentages with the sample size. Returns an error for an unknown session id. Any key works, free trial included, and it never counts against the allowance. Reads only hands this account uploaded. Docs: https://docs.pokerdata.io/llm-tools#hosted-mcp",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3605,7 +4079,7 @@
     },
     {
       "name": "list_my_sessions",
-      "description": "Recent uploaded sessions, newest first: id, hero, game type, dates, hands, and net result. game_type matches hole-card count. If this account has no hands, offer the hosted upload page from get_upload_link (https://pokerdata.io/upload) instead of asking the user to paste histories into chat.",
+      "description": "Recent uploaded sessions, newest first: id, hero, game type, dates, hands, and net result. game_type matches hole-card count. Reads only hands this account uploaded. Docs: https://docs.pokerdata.io/llm-tools#hosted-mcp",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3716,7 +4190,7 @@
     },
     {
       "name": "get_tournament_results",
-      "description": "MTT results imported from tournament summary files. Money is in cents. Hand histories are not a source of buy-ins or prizes. If this account has no hands, offer the hosted upload page from get_upload_link (https://pokerdata.io/upload) instead of asking the user to paste histories into chat.",
+      "description": "MTT results imported from tournament summary files. Money is in cents. Hand histories are not a source of buy-ins or prizes. Reads only hands this account uploaded. Docs: https://docs.pokerdata.io/llm-tools#hosted-mcp",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -4228,349 +4702,8 @@
       }
     },
     {
-      "name": "enqueue_solve",
-      "description": "Record a heads-up postflop solve request. Required: title, board, pot (bb), effective_stack (bb). The job stays pending: solver dispatch and billing are not configured, so this does not start a solve.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 120,
-            "description": "Label for the job, 1 to 120 characters."
-          },
-          "board": {
-            "type": "string",
-            "minLength": 5,
-            "description": "Board to solve, e.g. \"3h 3d 2s\"."
-          },
-          "pot": {
-            "type": "number",
-            "exclusiveMinimum": 0,
-            "description": "Starting pot in big blinds."
-          },
-          "effective_stack": {
-            "type": "number",
-            "exclusiveMinimum": 0,
-            "description": "Effective stack behind, in big blinds."
-          },
-          "oop_range": {
-            "type": "string",
-            "description": "Out-of-position range as hand-class weights, e.g. \"AA:1,AKs:0.42\". Defaults are left to the solver config."
-          },
-          "ip_range": {
-            "type": "string",
-            "description": "In-position range in the same weights format."
-          },
-          "bet_sizes": {
-            "type": "array",
-            "items": {
-              "type": "number",
-              "exclusiveMinimum": 0
-            },
-            "description": "Bet sizes as fractions of the pot, e.g. [0.33, 0.75]."
-          },
-          "add_allin": {
-            "type": "boolean",
-            "description": "Add an all-in branch alongside the bet sizes."
-          },
-          "max_aggressions": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 4,
-            "description": "Raises allowed per street, 1 to 4."
-          },
-          "iterations": {
-            "type": "integer",
-            "minimum": 50,
-            "maximum": 5000,
-            "description": "Requested solver iterations, 50 to 5000."
-          },
-          "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Free-form tags stored with the job."
-          }
-        },
-        "required": [
-          "title",
-          "board",
-          "pot",
-          "effective_stack"
-        ],
-        "additionalProperties": false
-      },
-      "title": "Record a solve request",
-      "annotations": {
-        "title": "Record a solve request",
-        "readOnlyHint": false,
-        "idempotentHint": false,
-        "destructiveHint": false,
-        "openWorldHint": false
-      },
-      "outputSchema": {
-        "type": "object",
-        "description": "One recorded solve request. Dispatch is not configured, so a job stays pending and never gets a solution id.",
-        "properties": {
-          "queue_id": {
-            "type": "integer",
-            "description": "Id for get_queued_solve."
-          },
-          "status": {
-            "type": "string",
-            "description": "\"pending\", \"running\", \"done\", or \"failed\"."
-          },
-          "title": {
-            "type": "string",
-            "description": "Title given when the job was recorded."
-          },
-          "board": {
-            "type": "string",
-            "description": "Board for the requested solve."
-          },
-          "pot": {
-            "type": "number",
-            "description": "Pot in big blinds."
-          },
-          "effective_stack": {
-            "type": "number",
-            "description": "Effective stack in big blinds."
-          },
-          "solution_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Always null while dispatch is disabled."
-          },
-          "dispatch": {
-            "type": "string",
-            "description": "Always \"not_configured\"."
-          },
-          "reason": {
-            "type": "string",
-            "description": "Why the job does not start a solve."
-          },
-          "createdAt": {
-            "type": "string",
-            "description": "ISO timestamp the job was recorded."
-          }
-        }
-      }
-    },
-    {
-      "name": "get_queued_solve",
-      "description": "Look up one queued solve for this account. status is pending, running, done, or failed. solution_id is null until a worker exists.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "queue_id": {
-            "type": "integer",
-            "exclusiveMinimum": 0,
-            "description": "Queue id returned by enqueue_solve."
-          }
-        },
-        "required": [
-          "queue_id"
-        ],
-        "additionalProperties": false
-      },
-      "title": "Get a queued solve",
-      "annotations": {
-        "title": "Get a queued solve",
-        "readOnlyHint": true,
-        "idempotentHint": true,
-        "destructiveHint": false,
-        "openWorldHint": false
-      },
-      "outputSchema": {
-        "type": "object",
-        "description": "One recorded solve request. Dispatch is not configured, so a job stays pending and never gets a solution id.",
-        "properties": {
-          "queue_id": {
-            "type": "integer",
-            "description": "Id for get_queued_solve."
-          },
-          "status": {
-            "type": "string",
-            "description": "\"pending\", \"running\", \"done\", or \"failed\"."
-          },
-          "title": {
-            "type": "string",
-            "description": "Title given when the job was recorded."
-          },
-          "board": {
-            "type": "string",
-            "description": "Board for the requested solve."
-          },
-          "pot": {
-            "type": "number",
-            "description": "Pot in big blinds."
-          },
-          "effective_stack": {
-            "type": "number",
-            "description": "Effective stack in big blinds."
-          },
-          "solution_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Always null while dispatch is disabled."
-          },
-          "dispatch": {
-            "type": "string",
-            "description": "Always \"not_configured\"."
-          },
-          "reason": {
-            "type": "string",
-            "description": "Why the job does not start a solve."
-          },
-          "createdAt": {
-            "type": "string",
-            "description": "ISO timestamp the job was recorded."
-          }
-        }
-      }
-    },
-    {
-      "name": "list_queued_solves",
-      "description": "List this account's solver-queue jobs, newest first. Jobs are not dispatched.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "limit": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 50,
-            "default": 20,
-            "description": "Jobs to return, 1 to 50."
-          }
-        },
-        "required": [
-          "limit"
-        ],
-        "additionalProperties": false
-      },
-      "title": "List my queued solves",
-      "annotations": {
-        "title": "List my queued solves",
-        "readOnlyHint": true,
-        "idempotentHint": true,
-        "destructiveHint": false,
-        "openWorldHint": false
-      },
-      "outputSchema": {
-        "type": "object",
-        "description": "This account's solver-queue jobs, newest first.",
-        "properties": {
-          "solves": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "description": "One recorded solve request. Dispatch is not configured, so a job stays pending and never gets a solution id.",
-              "properties": {
-                "queue_id": {
-                  "type": "integer",
-                  "description": "Id for get_queued_solve."
-                },
-                "status": {
-                  "type": "string",
-                  "description": "\"pending\", \"running\", \"done\", or \"failed\"."
-                },
-                "title": {
-                  "type": "string",
-                  "description": "Title given when the job was recorded."
-                },
-                "board": {
-                  "type": "string",
-                  "description": "Board for the requested solve."
-                },
-                "pot": {
-                  "type": "number",
-                  "description": "Pot in big blinds."
-                },
-                "effective_stack": {
-                  "type": "number",
-                  "description": "Effective stack in big blinds."
-                },
-                "solution_id": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "description": "Always null while dispatch is disabled."
-                },
-                "dispatch": {
-                  "type": "string",
-                  "description": "Always \"not_configured\"."
-                },
-                "reason": {
-                  "type": "string",
-                  "description": "Why the job does not start a solve."
-                },
-                "createdAt": {
-                  "type": "string",
-                  "description": "ISO timestamp the job was recorded."
-                }
-              }
-            },
-            "description": "Queued jobs. None are dispatched."
-          }
-        }
-      }
-    },
-    {
-      "name": "list_library_solutions",
-      "description": "Finished postflop solutions saved for this account. None are marked done while dispatch is disabled.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "limit": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 50,
-            "default": 20,
-            "description": "Solutions to return, 1 to 50."
-          }
-        },
-        "required": [
-          "limit"
-        ],
-        "additionalProperties": false
-      },
-      "title": "List my saved solutions",
-      "annotations": {
-        "title": "List my saved solutions",
-        "readOnlyHint": true,
-        "idempotentHint": true,
-        "destructiveHint": false,
-        "openWorldHint": false
-      },
-      "outputSchema": {
-        "type": "object",
-        "description": "Finished postflop solutions saved for this account.",
-        "properties": {
-          "solutions": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "description": "One finished solution."
-            },
-            "description": "Empty while solver dispatch is disabled."
-          },
-          "note": {
-            "type": "string",
-            "description": "Why no solution is marked done."
-          }
-        }
-      }
-    },
-    {
       "name": "get_upload_link",
-      "description": "Primary hand-upload path. Returns https://pokerdata.io/upload on this origin, with a short-lived signed token for the caller's account when signing is configured. Hand the URL to the user. Pasting histories into chat is the fallback.",
+      "description": "Returns the hosted hand-upload page, https://pokerdata.io/upload?utm_source=mcp_other&utm_medium=mcp on this origin, with a short-lived signed token for the caller's account when signing is configured. A person opens the URL and drops hand-history files there; it is the primary upload path.",
       "inputSchema": {
         "type": "object",
         "properties": {},
@@ -4616,7 +4749,7 @@
     },
     {
       "name": "upload_hand_history",
-      "description": "Secondary upload path for a small paste. Prefer get_upload_link and the hosted /upload page. Runs the same ingestion pipeline and returns hands parsed, tournaments parsed, and errors. Does not grade solver frequencies.",
+      "description": "Uploads a small pasted hand history or tournament summary (the hosted /upload page handles files). Runs the same ingestion pipeline as the upload page and returns hands parsed, tournaments parsed, and errors. Stored hands feed session summaries, results curves, and opponent notes.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -4676,11 +4809,127 @@
           },
           "persistence": {
             "type": "string",
-            "description": "Where the hands live, \"process_memory\"."
+            "description": "Where the hands live: \"database\" (durable) or \"process_memory\" (database unavailable)."
           },
           "persisted": {
             "type": "boolean",
-            "description": "Always false: nothing is written to durable storage."
+            "description": "True when the hands were written to durable storage."
+          }
+        }
+      }
+    },
+    {
+      "name": "get_pricing",
+      "description": "Get the price and buy link for each PokerData game bundle: one-time USD price, the pack-by-pack price for comparison, what is in the bundle (stack depths, postflop archives) and the page where it is bought. Pass `game` for one bundle, or omit it for all of them. Read-only; nothing is purchased.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "game": {
+            "type": "string",
+            "description": "Optional bundle/game slug to price one bundle, e.g. \"nlh-mtt-8max\" or \"nlh-6max\". Omit for every bundle."
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Get bundle prices and buy links",
+      "annotations": {
+        "title": "Get bundle prices and buy links",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "description": "Price and buy link for each game bundle.",
+        "properties": {
+          "bundles": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One game bundle.",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Bundle id, the game slug."
+                },
+                "title": {
+                  "type": "string",
+                  "description": "Bundle title."
+                },
+                "price": {
+                  "type": "string",
+                  "description": "Formatted one-time USD price, e.g. $250."
+                },
+                "priceCents": {
+                  "type": "integer",
+                  "description": "Price in US cents, as checkout charges it."
+                },
+                "currency": {
+                  "type": "string",
+                  "description": "Always USD."
+                },
+                "billing": {
+                  "type": "string",
+                  "description": "Always one-time."
+                },
+                "singlesPriceCents": {
+                  "type": "integer",
+                  "description": "What the same packs cost bought one at a time, in cents."
+                },
+                "singlesPrice": {
+                  "type": "string",
+                  "description": "Formatted pack-by-pack price."
+                },
+                "includes": {
+                  "type": "object",
+                  "description": "What the bundle holds.",
+                  "properties": {
+                    "preflopPacks": {
+                      "type": "integer",
+                      "description": "Preflop packs in the bundle."
+                    },
+                    "stacksBb": {
+                      "type": "array",
+                      "items": {
+                        "type": "number",
+                        "description": "Stack depth in big blinds."
+                      },
+                      "description": "Stack depths covered."
+                    },
+                    "summary": {
+                      "type": "string",
+                      "description": "One-line summary of the contents."
+                    },
+                    "postflopArchives": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "description": "Postflop archive id."
+                      },
+                      "description": "Postflop archives in the price."
+                    }
+                  }
+                },
+                "buyUrl": {
+                  "type": "string",
+                  "description": "Game page where the bundle is bought."
+                }
+              }
+            },
+            "description": "Bundles, or the one asked for."
+          },
+          "error": {
+            "type": "string",
+            "description": "Set when `game` is not a known bundle."
+          },
+          "games": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Bundle id."
+            },
+            "description": "Valid values for `game`, with an error."
           }
         }
       }

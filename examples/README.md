@@ -49,7 +49,7 @@ Approximate requests per script:
 | [`mcp-tools/capture.mjs`](mcp-tools/capture.mjs) | ~28 | 27 tools plus `tools/list` |
 | [`smoke-test`](smoke-test) | ~60 | ~70 with a key |
 
-Two tools write to the account (`enqueue_solve`, `upload_hand_history`). Both
+`upload_hand_history` writes to the account. Both
 the smoke test and `capture.mjs` skip them unless you pass
 `--include-mutating`, with or without a key; even then the example arguments
 fail the published input schema on purpose, so nothing is queued or uploaded.
@@ -102,14 +102,13 @@ leaves them untouched). A `mutating` page shows the request and says the tool
 was not called. Both are marked `SKIP` below.
 
 <!-- coverage:start -->
-Captured 2026-10-16T02:40:31Z without a key. Live `tools/list` returned 29 tools; every one has a page below. Not called in this run: `enqueue_solve`, `upload_hand_history` (the Live status column says why).
+Captured 2026-10-16T02:40:31Z without a key. Live `tools/list` returned 29 tools then; the solve-queue tools and `get_exploitability` have since been switched off until solve dispatch exists, so their pages are gone. Not called in this run: `enqueue_solve`, `upload_hand_history` (the Live status column says why).
 
 | Tool | Group | Access | Example | Live status |
 |---|---|---|---|---|
 | `list_games` | Coverage and docs | free | [mcp-tools/list_games.md](mcp-tools/list_games.md) | PASS: live data, no key |
 | `list_datasets` | Coverage and docs | free | [mcp-tools/list_datasets.md](mcp-tools/list_datasets.md) | PASS: live data, no key |
 | `get_tree_docs` | Coverage and docs | free | [mcp-tools/get_tree_docs.md](mcp-tools/get_tree_docs.md) | PASS: live data, no key |
-| `get_exploitability` | Coverage and docs | free | [mcp-tools/get_exploitability.md](mcp-tools/get_exploitability.md) | PASS: live data, no key |
 | `list_postflop_packs` | Coverage and docs | free | [mcp-tools/list_postflop_packs.md](mcp-tools/list_postflop_packs.md) | PASS: live data, no key |
 | `get_config` | Preflop | free | [mcp-tools/get_config.md](mcp-tools/get_config.md) | PASS: live data, no key |
 | `list_spots` | Preflop | free | [mcp-tools/list_spots.md](mcp-tools/list_spots.md) | PASS: live data, no key |
@@ -130,9 +129,5 @@ Captured 2026-10-16T02:40:31Z without a key. Live `tools/list` returned 29 tools
 | `list_my_opponents` | Your hands | account | [mcp-tools/list_my_opponents.md](mcp-tools/list_my_opponents.md) | PASS: key gate observed (no key in this run) |
 | `get_opponent_notes` | Your hands | account | [mcp-tools/get_opponent_notes.md](mcp-tools/get_opponent_notes.md) | PASS: key gate observed (no key in this run) |
 | `get_opponent_limp_range` | Your hands | account | [mcp-tools/get_opponent_limp_range.md](mcp-tools/get_opponent_limp_range.md) | PASS: key gate observed (no key in this run) |
-| `list_queued_solves` | Solve queue | account | [mcp-tools/list_queued_solves.md](mcp-tools/list_queued_solves.md) | PASS: key gate observed (no key in this run) |
-| `get_queued_solve` | Solve queue | account | [mcp-tools/get_queued_solve.md](mcp-tools/get_queued_solve.md) | PASS: key gate observed (no key in this run) |
-| `list_library_solutions` | Solve queue | account | [mcp-tools/list_library_solutions.md](mcp-tools/list_library_solutions.md) | PASS: key gate observed (no key in this run) |
-| `enqueue_solve` | Solve queue | mutating | [mcp-tools/enqueue_solve.md](mcp-tools/enqueue_solve.md) | SKIP: mutating tools are skipped unless --include-mutating is passed |
 | `upload_hand_history` | Your hands | mutating | [mcp-tools/upload_hand_history.md](mcp-tools/upload_hand_history.md) | SKIP: mutating tools are skipped unless --include-mutating is passed |
 <!-- coverage:end -->
