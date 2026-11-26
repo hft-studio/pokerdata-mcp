@@ -1,5 +1,7 @@
 # PokerData MCP: GTO poker solver data for AI agents
 
+[![hft-studio/pokerdata-mcp MCP server](https://glama.ai/mcp/servers/hft-studio/pokerdata-mcp/badges/score.svg)](https://glama.ai/mcp/servers/hft-studio/pokerdata-mcp)
+
 [PokerData](https://pokerdata.io) serves GTO solver strategy for no-limit
 hold'em and pot-limit Omaha as JSON, over an MCP server and a REST API.
 Point Claude, Cursor or any MCP client at it and ask "what does UTG open at
