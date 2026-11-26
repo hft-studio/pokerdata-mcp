@@ -9,7 +9,8 @@ Point Claude, Cursor or any MCP client at it and ask "what does UTG open at
 solver's real frequencies and EVs, not a guess.
 
 - **Endpoint:** `https://pokerdata.io/api/mcp` (Streamable HTTP, stateless)
-- **Free without a key:** the tool list and the coverage and docs tools
+- **Auth is optional (partial auth):** without a key or sign-in, the tool
+  list, the coverage and docs tools, and 10 strategy answers a day work
 - **Strategy data:** a `pdk_` key from [pokerdata.io/app/api](https://pokerdata.io/app/api).
   A free Starter key (25 calls or 50 MB a month, no card) unlocks every data
   tool. Claude and other OAuth clients can sign in instead of pasting a key.
@@ -110,12 +111,12 @@ Python, client configs, REST) and a smoke test, all with captured responses.
 
 | Group | Tools | Key |
 |---|---|---|
-| Coverage and docs | `get_started`, `list_games`, `list_postflop_packs`, `list_datasets`, `get_tree_docs`, `get_exploitability` | Not needed |
+| Coverage and docs | `get_started`, `list_games`, `list_postflop_packs`, `list_datasets`, `get_tree_docs` | Not needed |
 | Preflop | `get_range`, `get_node`, `list_spots`, `get_config`, `get_range_metadata` | Needed, 6-max NL included; the free Starter key works |
 | Postflop | `get_postflop_node`, `get_postflop_range` | Needed |
 | Coaching | `explain_combo`, `get_board_report`, `compare_strategies` | Needed |
-| Your hands | hand, session and opponent tools, hand upload | Any key, free trial included; never counts against your allowance |
-| Solve queue | `enqueue_solve`, `get_queued_solve`, `list_queued_solves`, `list_library_solutions` | Needed |
+| Your hands | session summaries, results curves, tournament results and opponent notes from your uploaded hands, plus hand upload | Any key, free trial included; never counts against your allowance |
+| Requests | `submit_request`, `list_my_requests`: file a feature or data request; your question goes to the PokerData team in your own words | Any key |
 
 Preflop spots are action paths such as `UTG_60%_HJ_Call` (NLHE) or
 `UTG_Open_HJ_3B` (PLO). EVs are in small blinds. Responses are compact by
@@ -160,8 +161,7 @@ by position, is at
 Nothing is estimated to fill a gap. Postflop exploitability is published per
 board (`list_postflop_packs` with a `pack`) and omitted where the solve does
 not carry it. No preflop dataset publishes exploitability, convergence or
-iteration counts, and `get_exploitability` says so instead of returning a
-number.
+iteration counts, so no tool returns one.
 
 ## Related
 

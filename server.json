@@ -25,7 +25,7 @@
       "headers": [
         {
           "name": "Authorization",
-          "description": "Bearer pdk_… API key from https://pokerdata.io/app/api. Needed for strategy tools (the free Starter key works); without it only the tool list and coverage tools answer.",
+          "description": "Optional (partial auth). Without it: the tool list, the coverage and docs tools, and 10 strategy answers a day. A pdk_ API key from https://pokerdata.io/app/api (free Starter key works) or OAuth sign-in raises the limits and unlocks your uploaded hands.",
           "isRequired": false,
           "isSecret": true
         }
@@ -43,7 +43,7 @@
       "environmentVariables": [
         {
           "name": "POKERDATA_API_KEY",
-          "description": "pdk_ API key from https://pokerdata.io/app/api. Needed for strategy tools (the free Starter key works); without it only the tool list and coverage tools answer.",
+          "description": "Optional (partial auth). Without it: the tool list, the coverage and docs tools, and 10 strategy answers a day. A pdk_ API key from https://pokerdata.io/app/api (free Starter key works) raises the limits and unlocks your uploaded hands.",
           "isRequired": false,
           "isSecret": true
         }
