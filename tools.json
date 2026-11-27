@@ -1732,13 +1732,127 @@
     },
     {
       "name": "analyze_hu_plo_hand",
-      "description": "One heads-up PLO4 hand, as played, against the flop blueprint in one call: every flop decision mapped onto the blueprint tree (sizes to the nearest blueprint size), and for each of the hero's decisions the best action, every action's EV for the exact hand, the loss of the action played (bb and % of pot), whether it counts as a mistake, the hand's percentile in its range and the opponent's response to each action. Pass `hand` exactly as pokerstudy.ai's get_hand returns it in `raw.hand` (players with startingStack and cards; actions with street, actionType and amount, raises as \"raise to\") and `hero` (raw.hero). The stack is matched to the nearest blueprint depth. When this exact turn spot has been solved, `turnDecisions` gives the same answers for every turn decision; otherwise pass solve_turn: true to queue a GPU solve of it (about 2 to 4 minutes) and call again. Rivers work the same way: when the turn is solved and the hand reached the river, `riverDecisions` gives every river decision from an exact river solve that starts from the turn solve's own river ranges, and solve_turn: true queues that solve when it is missing.",
+      "description": "One heads-up PLO4 hand, as played, against the flop blueprint in one call: every flop decision mapped onto the blueprint tree (sizes to the nearest blueprint size), and for each of the hero's decisions the best action, every action's EV for the exact hand, the loss of the action played (bb and % of pot), whether it counts as a mistake, the hand's percentile in its range and the opponent's response to each action. `hand` is a parsed hand history: big blind, the two players with starting stacks and hole cards, every action with street, type and chip amount, and the board. `hero` is the hero's player name. The stack is matched to the nearest blueprint depth. When this exact turn spot has already been solved, `turnDecisions` gives the same answers for every turn decision, and when that turn solve covers the river the hand reached, `riverDecisions` does the same for the river. Turn and river spots that are not solved yet are reported as unsolved.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "hand": {
             "type": "object",
-            "description": "Parsed hand: { bigBlind, players: [{ playerName, startingStack, cards }], actions: [{ playerName, actionType, amount, street }], communityCards }."
+            "description": "One parsed heads-up PLO4 hand history. Amounts are chips, in the same unit as bigBlind. Uploaded-hand summary rows are not this shape: they carry no stacks or per-action amounts.",
+            "properties": {
+              "handId": {
+                "type": "string",
+                "description": "Optional id of the hand, echoed back."
+              },
+              "bigBlind": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "Big blind in chips."
+              },
+              "players": {
+                "type": "array",
+                "minItems": 2,
+                "description": "Players dealt in. Exactly two may be seated (not sitting out).",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "playerName": {
+                      "type": "string",
+                      "description": "Name as it appears in the actions."
+                    },
+                    "startingStack": {
+                      "type": "number",
+                      "minimum": 0,
+                      "description": "Stack at the start of the hand, in chips."
+                    },
+                    "cards": {
+                      "type": "string",
+                      "description": "Hole cards, e.g. \"AsKsQhJh\". Required for the hero."
+                    },
+                    "isSittingOut": {
+                      "type": "boolean",
+                      "description": "True if the player was not dealt in."
+                    }
+                  },
+                  "required": [
+                    "playerName",
+                    "startingStack"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "actions": {
+                "type": "array",
+                "description": "Every action in order, blinds included. Bets and raises are the street total the player raised to; calls are the chips added.",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "playerName": {
+                      "type": "string",
+                      "description": "Player who acted."
+                    },
+                    "street": {
+                      "type": "string",
+                      "enum": [
+                        "Preflop",
+                        "Flop",
+                        "Turn",
+                        "River"
+                      ],
+                      "description": "Street of the action."
+                    },
+                    "actionType": {
+                      "type": "string",
+                      "enum": [
+                        "SMALL_BLIND",
+                        "BIG_BLIND",
+                        "ANTE",
+                        "POST",
+                        "POSTS",
+                        "CHECK",
+                        "CALL",
+                        "FOLD",
+                        "BET",
+                        "RAISE",
+                        "ALL_IN",
+                        "UNCALLED_BET"
+                      ],
+                      "description": "What the player did. UNCALLED_BET is chips returned."
+                    },
+                    "amount": {
+                      "type": "number",
+                      "minimum": 0,
+                      "description": "Chips for this action (0 for check and fold)."
+                    },
+                    "isAllIn": {
+                      "type": "boolean",
+                      "description": "True if the action put the player all in."
+                    },
+                    "amountIsDelta": {
+                      "type": "boolean",
+                      "description": "True if a bet or raise amount is the chips added rather than the street total."
+                    }
+                  },
+                  "required": [
+                    "playerName",
+                    "street",
+                    "actionType",
+                    "amount"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "communityCards": {
+                "type": "string",
+                "description": "Board as dealt, e.g. \"3c2hTh7cKd\"."
+              }
+            },
+            "required": [
+              "bigBlind",
+              "players",
+              "actions"
+            ],
+            "additionalProperties": false
           },
           "hero": {
             "type": "string",
@@ -1747,10 +1861,6 @@
           "mistake_bb": {
             "type": "number",
             "description": "Loss in bb above which a decision counts as a mistake (default 0.1)."
-          },
-          "solve_turn": {
-            "type": "boolean",
-            "description": "When the hand's turn (or, once the turn is solved, river) spot is not solved yet, queue a solve for it (about 2 to 4 minutes; call again for the decisions)."
           }
         },
         "required": [
@@ -1825,7 +1935,7 @@
           },
           "turn": {
             "type": "object",
-            "description": "When the hand saw a turn: the spot (stack, preflop, flopLine, board, potBb, behindBb, turn sizes), spotId, whether it is solved, and `solve` when a solve was queued."
+            "description": "When the hand saw a turn: the spot (stack, preflop, flopLine, board, potBb, behindBb, turn sizes), spotId, whether it is solved, and `solve`, the status of a solve of this spot when one is under way."
           },
           "turnDecisions": {
             "type": "array",
@@ -1837,7 +1947,7 @@
           },
           "river": {
             "type": "object",
-            "description": "When the turn is solved and the hand saw a river: the river spot (turnSpot, turnLine, card, potBb, behindBb, riverBets), spotId, whether it is solved, and `solve` when a solve was queued."
+            "description": "When the turn is solved and the hand saw a river: the river spot (turnSpot, turnLine, card, potBb, behindBb, riverBets), spotId, whether it is solved, and `solve`, the status of a solve of this spot when one is under way."
           },
           "riverDecisions": {
             "type": "array",
@@ -3099,637 +3209,314 @@
         "type": "object",
         "properties": {
           "session_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid",
-                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
             "description": "Only hands from this upload session (see list_my_sessions)."
           },
           "game_type": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "NLHE",
-                  "PLO",
-                  "PLO5",
-                  "PLO6"
-                ]
-              },
-              {
-                "type": "null"
-              }
+            "type": "string",
+            "enum": [
+              "NLHE",
+              "PLO",
+              "PLO5",
+              "PLO6"
             ],
             "description": "Only hands of this game type. Matches hole-card count."
           },
           "table_size": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 2,
-                "maximum": 9
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 9,
             "description": "Only hands dealt at tables of this many seats."
           },
           "filter": {
-            "anyOf": [
-              {
+            "type": "object",
+            "description": "Hand-level filters, all optional.",
+            "properties": {
+              "position": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "UTG",
+                    "UTG1",
+                    "UTG2",
+                    "MP",
+                    "LJ",
+                    "HJ",
+                    "CO",
+                    "BTN",
+                    "SB",
+                    "BB"
+                  ]
+                },
+                "description": "Keep hands where hero sat in one of these seats."
+              },
+              "wasSrp": {
+                "type": "boolean",
+                "description": "Hand was a single-raised pot."
+              },
+              "wasThreeBetPot": {
+                "type": "boolean",
+                "description": "Hand was a 3-bet pot."
+              },
+              "isPfr": {
+                "type": "boolean",
+                "description": "Hero was the preflop raiser."
+              },
+              "isIpVsPfr": {
+                "type": "boolean",
+                "description": "Hero was in position against the preflop raiser."
+              },
+              "sawFlop": {
+                "type": "boolean",
+                "description": "Hero saw a flop."
+              },
+              "vpip": {
+                "type": "boolean",
+                "description": "Hero put money in voluntarily."
+              },
+              "pfr": {
+                "type": "boolean",
+                "description": "Hero raised preflop."
+              },
+              "rfiOpp": {
+                "type": "boolean",
+                "description": "Hero had a raise-first-in opportunity (folded to hero)."
+              },
+              "rfi": {
+                "type": "boolean",
+                "description": "Hero raised first in."
+              },
+              "threeBet": {
+                "type": "boolean",
+                "description": "Hero 3-bet."
+              },
+              "facedThreeBet": {
+                "type": "boolean",
+                "description": "Hero's open was 3-bet."
+              },
+              "foldedToThreeBet": {
+                "type": "boolean",
+                "description": "Hero folded to a 3-bet."
+              },
+              "limped": {
+                "type": "boolean",
+                "description": "Hero open-limped."
+              },
+              "facedLimp": {
+                "type": "boolean",
+                "description": "Hero acted after an opponent's open limp."
+              },
+              "vsThreeBetAction": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "fold",
+                    "call",
+                    "raise"
+                  ]
+                },
+                "description": "Opener's action vs a 3-bet: fold, call, or raise (4-bet)."
+              },
+              "sawShowdown": {
+                "type": "boolean",
+                "description": "Hand reached showdown."
+              },
+              "wonAtShowdown": {
+                "type": "boolean",
+                "description": "Hero won at showdown."
+              },
+              "flopFirstAction": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "check",
+                    "bet",
+                    "call",
+                    "fold",
+                    "raise"
+                  ]
+                },
+                "description": "Hero's first action on the flop."
+              },
+              "flopFirstResponseToBet": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "check",
+                    "bet",
+                    "call",
+                    "fold",
+                    "raise"
+                  ]
+                },
+                "description": "Hero's first action facing a flop bet."
+              },
+              "turnFirstAction": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "check",
+                    "bet",
+                    "call",
+                    "fold",
+                    "raise"
+                  ]
+                },
+                "description": "Hero's first action on the turn."
+              },
+              "turnFirstResponseToBet": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "check",
+                    "bet",
+                    "call",
+                    "fold",
+                    "raise"
+                  ]
+                },
+                "description": "Hero's first action facing a turn bet."
+              },
+              "riverFirstAction": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "check",
+                    "bet",
+                    "call",
+                    "fold",
+                    "raise"
+                  ]
+                },
+                "description": "Hero's first action on the river."
+              },
+              "riverFirstResponseToBet": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "check",
+                    "bet",
+                    "call",
+                    "fold",
+                    "raise"
+                  ]
+                },
+                "description": "Hero's first action facing a river bet."
+              },
+              "flopFacedBetPctPot": {
                 "type": "object",
-                "description": "Hand-level filters. Every field is optional; null means the filter is not applied.",
                 "properties": {
-                  "position": {
-                    "anyOf": [
-                      {
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "enum": [
-                            "UTG",
-                            "UTG1",
-                            "UTG2",
-                            "MP",
-                            "LJ",
-                            "HJ",
-                            "CO",
-                            "BTN",
-                            "SB",
-                            "BB"
-                          ]
-                        }
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Keep hands where hero sat in one of these seats."
+                  "min": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Inclusive lower bound, % of pot."
                   },
-                  "wasSrp": {
-                    "anyOf": [
-                      {
-                        "type": "boolean"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Hand was a single-raised pot."
-                  },
-                  "wasThreeBetPot": {
-                    "anyOf": [
-                      {
-                        "type": "boolean"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Hand was a 3-bet pot."
-                  },
-                  "isPfr": {
-                    "anyOf": [
-                      {
-                        "type": "boolean"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Hero was the preflop raiser."
-                  },
-                  "isIpVsPfr": {
-                    "anyOf": [
-                      {
-                        "type": "boolean"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Hero was in position against the preflop raiser."
-                  },
-                  "sawFlop": {
-                    "anyOf": [
-                      {
-                        "type": "boolean"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Hero saw a flop."
-                  },
-                  "vpip": {
-                    "anyOf": [
-                      {
-                        "type": "boolean"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Hero put money in voluntarily."
-                  },
-                  "pfr": {
-                    "anyOf": [
-                      {
-                        "type": "boolean"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Hero raised preflop."
-                  },
-                  "rfiOpp": {
-                    "anyOf": [
-                      {
-                        "type": "boolean"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Hero had a raise-first-in opportunity (folded to hero)."
-                  },
-                  "rfi": {
-                    "anyOf": [
-                      {
-                        "type": "boolean"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Hero raised first in."
-                  },
-                  "threeBet": {
-                    "anyOf": [
-                      {
-                        "type": "boolean"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Hero 3-bet."
-                  },
-                  "facedThreeBet": {
-                    "anyOf": [
-                      {
-                        "type": "boolean"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Hero's open was 3-bet."
-                  },
-                  "foldedToThreeBet": {
-                    "anyOf": [
-                      {
-                        "type": "boolean"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Hero folded to a 3-bet."
-                  },
-                  "limped": {
-                    "anyOf": [
-                      {
-                        "type": "boolean"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Hero open-limped."
-                  },
-                  "facedLimp": {
-                    "anyOf": [
-                      {
-                        "type": "boolean"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Hero acted after an opponent's open limp."
-                  },
-                  "vsThreeBetAction": {
-                    "anyOf": [
-                      {
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "enum": [
-                            "fold",
-                            "call",
-                            "raise"
-                          ]
-                        }
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Opener's action vs a 3-bet: fold, call, or raise (4-bet)."
-                  },
-                  "sawShowdown": {
-                    "anyOf": [
-                      {
-                        "type": "boolean"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Hand reached showdown."
-                  },
-                  "wonAtShowdown": {
-                    "anyOf": [
-                      {
-                        "type": "boolean"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Hero won at showdown."
-                  },
-                  "flopFirstAction": {
-                    "anyOf": [
-                      {
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "enum": [
-                            "check",
-                            "bet",
-                            "call",
-                            "fold",
-                            "raise"
-                          ]
-                        }
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Hero's first action on the flop."
-                  },
-                  "flopFirstResponseToBet": {
-                    "anyOf": [
-                      {
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "enum": [
-                            "check",
-                            "bet",
-                            "call",
-                            "fold",
-                            "raise"
-                          ]
-                        }
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Hero's first action facing a flop bet."
-                  },
-                  "turnFirstAction": {
-                    "anyOf": [
-                      {
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "enum": [
-                            "check",
-                            "bet",
-                            "call",
-                            "fold",
-                            "raise"
-                          ]
-                        }
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Hero's first action on the turn."
-                  },
-                  "turnFirstResponseToBet": {
-                    "anyOf": [
-                      {
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "enum": [
-                            "check",
-                            "bet",
-                            "call",
-                            "fold",
-                            "raise"
-                          ]
-                        }
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Hero's first action facing a turn bet."
-                  },
-                  "riverFirstAction": {
-                    "anyOf": [
-                      {
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "enum": [
-                            "check",
-                            "bet",
-                            "call",
-                            "fold",
-                            "raise"
-                          ]
-                        }
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Hero's first action on the river."
-                  },
-                  "riverFirstResponseToBet": {
-                    "anyOf": [
-                      {
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "enum": [
-                            "check",
-                            "bet",
-                            "call",
-                            "fold",
-                            "raise"
-                          ]
-                        }
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Hero's first action facing a river bet."
-                  },
-                  "flopFacedBetPctPot": {
-                    "anyOf": [
-                      {
-                        "type": "object",
-                        "properties": {
-                          "min": {
-                            "anyOf": [
-                              {
-                                "type": "number",
-                                "minimum": 0
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ],
-                            "description": "Inclusive lower bound, % of pot."
-                          },
-                          "max": {
-                            "anyOf": [
-                              {
-                                "type": "number",
-                                "minimum": 0
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ],
-                            "description": "Exclusive upper bound, % of pot."
-                          }
-                        },
-                        "additionalProperties": false
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Size of the flop bet hero faced, as % of pot."
-                  },
-                  "turnFacedBetPctPot": {
-                    "anyOf": [
-                      {
-                        "type": "object",
-                        "properties": {
-                          "min": {
-                            "anyOf": [
-                              {
-                                "type": "number",
-                                "minimum": 0
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ],
-                            "description": "Inclusive lower bound, % of pot."
-                          },
-                          "max": {
-                            "anyOf": [
-                              {
-                                "type": "number",
-                                "minimum": 0
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ],
-                            "description": "Exclusive upper bound, % of pot."
-                          }
-                        },
-                        "additionalProperties": false
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Size of the turn bet hero faced, as % of pot."
-                  },
-                  "riverFacedBetPctPot": {
-                    "anyOf": [
-                      {
-                        "type": "object",
-                        "properties": {
-                          "min": {
-                            "anyOf": [
-                              {
-                                "type": "number",
-                                "minimum": 0
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ],
-                            "description": "Inclusive lower bound, % of pot."
-                          },
-                          "max": {
-                            "anyOf": [
-                              {
-                                "type": "number",
-                                "minimum": 0
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ],
-                            "description": "Exclusive upper bound, % of pot."
-                          }
-                        },
-                        "additionalProperties": false
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Size of the river bet hero faced, as % of pot."
-                  },
-                  "flopBetPctPot": {
-                    "anyOf": [
-                      {
-                        "type": "object",
-                        "properties": {
-                          "min": {
-                            "anyOf": [
-                              {
-                                "type": "number",
-                                "minimum": 0
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ],
-                            "description": "Inclusive lower bound, % of pot."
-                          },
-                          "max": {
-                            "anyOf": [
-                              {
-                                "type": "number",
-                                "minimum": 0
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ],
-                            "description": "Exclusive upper bound, % of pot."
-                          }
-                        },
-                        "additionalProperties": false
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Size of hero's flop bet, as % of pot."
-                  },
-                  "turnBetPctPot": {
-                    "anyOf": [
-                      {
-                        "type": "object",
-                        "properties": {
-                          "min": {
-                            "anyOf": [
-                              {
-                                "type": "number",
-                                "minimum": 0
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ],
-                            "description": "Inclusive lower bound, % of pot."
-                          },
-                          "max": {
-                            "anyOf": [
-                              {
-                                "type": "number",
-                                "minimum": 0
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ],
-                            "description": "Exclusive upper bound, % of pot."
-                          }
-                        },
-                        "additionalProperties": false
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Size of hero's turn bet, as % of pot."
-                  },
-                  "riverBetPctPot": {
-                    "anyOf": [
-                      {
-                        "type": "object",
-                        "properties": {
-                          "min": {
-                            "anyOf": [
-                              {
-                                "type": "number",
-                                "minimum": 0
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ],
-                            "description": "Inclusive lower bound, % of pot."
-                          },
-                          "max": {
-                            "anyOf": [
-                              {
-                                "type": "number",
-                                "minimum": 0
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ],
-                            "description": "Exclusive upper bound, % of pot."
-                          }
-                        },
-                        "additionalProperties": false
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Size of hero's river bet, as % of pot."
+                  "max": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Exclusive upper bound, % of pot."
                   }
                 },
-                "additionalProperties": false
+                "additionalProperties": false,
+                "description": "Size of the flop bet hero faced, as % of pot."
               },
-              {
-                "type": "null"
+              "turnFacedBetPctPot": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Inclusive lower bound, % of pot."
+                  },
+                  "max": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Exclusive upper bound, % of pot."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Size of the turn bet hero faced, as % of pot."
+              },
+              "riverFacedBetPctPot": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Inclusive lower bound, % of pot."
+                  },
+                  "max": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Exclusive upper bound, % of pot."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Size of the river bet hero faced, as % of pot."
+              },
+              "flopBetPctPot": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Inclusive lower bound, % of pot."
+                  },
+                  "max": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Exclusive upper bound, % of pot."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Size of hero's flop bet, as % of pot."
+              },
+              "turnBetPctPot": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Inclusive lower bound, % of pot."
+                  },
+                  "max": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Exclusive upper bound, % of pot."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Size of hero's turn bet, as % of pot."
+              },
+              "riverBetPctPot": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Inclusive lower bound, % of pot."
+                  },
+                  "max": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Exclusive upper bound, % of pot."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Size of hero's river bet, as % of pot."
               }
-            ],
-            "description": "Hand-level filters, all optional."
+            },
+            "additionalProperties": false
           },
           "sort": {
             "type": "string",
@@ -3910,16 +3697,9 @@
         "type": "object",
         "properties": {
           "session_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid",
-                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
             "description": "Only this upload session's hands. Omit for the whole account."
           },
           "max_points": {
@@ -4091,19 +3871,12 @@
             "description": "Sessions to return, 1 to 50."
           },
           "game_type": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "NLHE",
-                  "PLO",
-                  "PLO5",
-                  "PLO6"
-                ]
-              },
-              {
-                "type": "null"
-              }
+            "type": "string",
+            "enum": [
+              "NLHE",
+              "PLO",
+              "PLO5",
+              "PLO6"
             ],
             "description": "Only sessions containing this game type."
           }
@@ -4332,36 +4105,15 @@
             "description": "Opponents to return, 1 to 500."
           },
           "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "description": "Case-insensitive substring of the opponent's screen name."
           },
           "hero": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "description": "Only hands where this hero name was seated."
           },
           "game_type": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "description": "Only hands of this game type, e.g. \"NLHE\" or \"PLO\"."
           },
           "min_hands": {
@@ -4544,84 +4296,49 @@
         "type": "object",
         "properties": {
           "opponent_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid",
-                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
             "description": "Only this opponent's limps (see list_my_opponents). Omit for every tracked villain."
           },
           "session_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid",
-                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
             "description": "Only hands from this upload session."
           },
           "position": {
-            "anyOf": [
-              {
-                "type": "array",
-                "items": {
-                  "type": "string",
-                  "enum": [
-                    "UTG",
-                    "UTG1",
-                    "UTG2",
-                    "MP",
-                    "LJ",
-                    "HJ",
-                    "CO",
-                    "BTN",
-                    "SB",
-                    "BB"
-                  ]
-                }
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "UTG",
+                "UTG1",
+                "UTG2",
+                "MP",
+                "LJ",
+                "HJ",
+                "CO",
+                "BTN",
+                "SB",
+                "BB"
+              ]
+            },
             "description": "Only limps from these seats."
           },
           "table_size": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 2,
-                "maximum": 9
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 9,
             "description": "Only hands dealt at tables of this many seats."
           },
           "game_type": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "NLHE",
-                  "PLO",
-                  "PLO5",
-                  "PLO6"
-                ]
-              },
-              {
-                "type": "null"
-              }
+            "type": "string",
+            "enum": [
+              "NLHE",
+              "PLO",
+              "PLO5",
+              "PLO6"
             ],
             "description": "Only hands of this game type."
           },
