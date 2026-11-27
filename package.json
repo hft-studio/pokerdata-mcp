@@ -1,6 +1,6 @@
 {
   "name": "pokerdata-mcp",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "GTO poker solver data: NLHE/PLO preflop ranges, postflop strategy, EV. Free Starter key.",
   "mcpName": "io.github.hft-studio/pokerdata",
   "bin": {
